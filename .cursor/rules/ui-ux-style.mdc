@@ -1,0 +1,32 @@
+---
+description: Persistent UI and UX direction for the AI Demo Lab
+alwaysApply: true
+---
+# AI Demo Lab UI/UX Direction
+
+Preserve the existing light, editorial, instructional visual language across new demos and refinements.
+
+## Visual system
+- Use a warm-white/light canvas with a subtle 36px grid and faint radial blue/purple atmosphere; avoid dark dashboards, glossy gradients, and heavy decoration.
+- Use `DM Sans Variable` for readable body copy and `Space Grotesk Variable` for headings, labels, and compact UI chrome.
+- Keep the palette semantic: ink `#152238`, soft ink `#5d6b7d`, muted `#8390a2`, border `#dfe4eb`, retrieval blue `#2a71c7`, evidence green `#258463`, generation purple `#7854b8`, and input amber `#b97428`.
+- Prefer white or translucent-white surfaces, 1px borders, restrained shadows, and rounded corners: 8px small, 14px medium, 22px large.
+- Use generous whitespace, clear section hierarchy, uppercase eyebrow metadata, and short explanatory copy. Favor visual storytelling over dense tables or control-heavy panels.
+
+## Interaction and motion
+- Make each demo feel like a guided story: show the current stage, explain what is happening, expose progress, and let users play, pause, restart, step, skip, or select a stage.
+- Animate meaningful data transformations, not arbitrary decoration. Keep motion slow enough to follow and synchronize visual state with the story state.
+- Preserve visible content while it transforms; do not replace the whole canvas when a persistent pipeline or progressive state communicates the concept better.
+- Support keyboard navigation, `aria-label`, `aria-current`, `aria-pressed`, live explanations where appropriate, and obvious `:focus-visible` outlines.
+- Respect `prefers-reduced-motion`: remove decorative motion and transitions while preserving readable state changes and usable controls.
+
+## Responsive behavior
+- Build desktop layouts with a focused max-width shell (about 1240px), then collapse to one column on narrow screens.
+- Keep touch targets at least 44px, prevent horizontal overflow, and let explanatory copy wrap naturally instead of clipping or line-clamping important content.
+- On mobile, simplify decorative marks and navigation before reducing text size; preserve readable body text and the primary action.
+
+## Implementation guardrails
+- Reuse the shared tokens in `src/styles/global.css`; add new semantic tokens only when a genuinely new concept needs one.
+- Use Lucide icons consistently, mark decorative icons `aria-hidden="true"`, and pair unfamiliar icons with visible labels or accessible names.
+- Extend existing card, timeline, stage, and control patterns before inventing unrelated components or visual treatments.
+- Validate new screens at desktop and mobile widths, including focus states, motion reduction, deep links, and no-overflow behavior.

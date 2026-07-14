@@ -1,0 +1,12 @@
+# Local production-like serving of the aidemo SPA via the hardened Nginx image.
+# Run:  docker compose up -d --build
+# The container's internal Nginx serves the SPA on host port 8080.
+services:
+  aidemo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: img.aksg.net/aidemo/aidemo:latest
+    restart: unless-stopped
+    ports:
+      - "8080:80"

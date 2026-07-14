@@ -1,0 +1,132 @@
+---
+description: Image build, tagging, Harbor push, cosign signing, and test validation for the aidemo SPA image
+alwaysApply: true
+---
+
+# Release & Image Publishing Rules — aidemo
+
+## Registry & Image Path
+- **Registry**: private Harbor at `img.aksg.net` (Harbor v2.15.0).
+- **Image**: `img.aksg.net/aidemo/aidemo` — Harbor **project** `aidemo`, **repository** `aidemo`. Always use the full `project/repository` form (NOT `img.aksg.net/aidemo`, which is a different/invalid path).
+- **Auth**: Harbor credentials live in `~/.docker/config.json` (already configured for `img.aksg.net` as a robot account). This account has **push + pull** scope only — it CANNOT set project configuration, metadata, or CVE allowlists (returns `403 Forbidden`). Project-admin actions (allowlists, content-trust policy, tag immutability) must be done in the Harbor UI or with an admin credential.
+
+## Cosign Signing (key-based)
+Harbor enforces Cosign content trust — every published image MUST be signed before it can be pulled. Signing is **key-based** (not keyless).
+
+- **cosign binary**: `~/.local/bin/cosign`. Ensure it's on PATH: `export PATH="$HOME/.local/bin:$PATH"`.
+- **Key material** lives OUTSIDE the repo, at `~/.config/aidemo/`:
+  - `cosign.key` — private key (chmod 600). Never commit, never bake into an image.
+  - `cosign.pub` — public key (safe to share; configure in Harbor / admission controllers for verification).
+  - `cosign.password` — password for the private key (chmod 600). Load via `export COSIGN_PASSWORD="$(cat ~/.config/aidemo/cosign.password)"`.
+- To regenerate keys: `cosign generate-key-pair` (prompts for / accepts `COSIGN_PASSWORD` env var). Rotate via the same command if the key is compromised.
+
+## Versioning & Tags
+- **Git-tag-driven, with `version.json` as the in-repo source of truth.** The `version` field in `version.json`, the git tag `v$VERSION`, and the Harbor `$VERSION` tag must all agree. A release tag has the form `v<semver>` (e.g. `v0.1.0`).
+- **`version.json`** lives at the repo root: `{ "version": "0.1.0", "buildDate": "" }`. The `version` field drives the release tag. The `buildDate` field is empty in the repo and stamped at Docker build time via `--build-arg BUILD_DATE`. Update `version.json` to match `$VERSION` **before** building.
+- **Always publish a new full-semver tag**: before building or pushing, check both Git tags and Harbor tags. If the current highest tag is `0.1.0` / `v0.1.0`, the next image MUST be `0.1.1` / `v0.1.1`. Never rebuild, re-push, move, or overwrite an existing full-semver tag.
+- Each release produces **four Harbor tags** for one image (same manifest/digest):
+  - `img.aksg.net/aidemo/aidemo:<version>` (e.g. `0.1.0`) — **full-semver tag**, immutable, one per release. Never re-push a version tag.
+  - `img.aksg.net/aidemo/aidemo:<minor>` (e.g. `0.1`) — **minor rolling tag**, mutable, always points at the newest `0.1.x` release. Re-pushed on every `0.1.x` release.
+  - `img.aksg.net/aidemo/aidemo:<major>` (e.g. `0`) — **major rolling tag**, mutable, always points at the newest `0.x.x` release. Re-pushed on every release within the `0` major series.
+  - `img.aksg.net/aidemo/aidemo:latest` — **mutable**, always points at the newest release regardless of major/minor. Re-pushed on every release.
+- **Rolling tag re-pointing semantics**:
+  - Patch release (`0.1.0` → `0.1.1`): re-points `0.1`, `0`, and `latest`; `0.1.1` is a new immutable tag.
+  - Minor release (`0.1.x` → `0.2.0`): re-points `0` and `latest`, introduces a new `0.2` rolling tag, leaves `0.1` pointing at the last `0.1.x`.
+  - Major release (`0.x.x` → `1.0.0`): introduces new `1` and `1.0` rolling tags, re-points `latest`, leaves `0` / `0.x` frozen at the last release in the `0` series.
+- **The triad must correspond**: the git tag `v0.1.0`, the Harbor `0.1.0` tag, and the source code state (the commit) must all refer to the same code. Build the image from the exact commit you tag. The rolling tags are *not* part of the triad — they're convenience pointers that follow the immutable tag.
+- **Testing builds use formal patch tags + latest**: do NOT push ad-hoc tags such as `test-*` for user testing. Publish the next unused full-semver patch tag instead and always tag/push `latest` to the same digest so testers who pull `latest` receive the newest test image.
+- **GA is user-gated**: after a formal patch image is built and pushed for testing, wait for the user to explicitly say "GA" before committing/pushing code or doc changes. On GA, create and push the Git tag that matches the tested full-semver Docker image tag exactly (image `0.1.0` -> Git tag `v0.1.0`; never tag from `latest`).
+
+## Base Images — Always Pull Latest
+The `Dockerfile` uses Wolfi base images from the internal 0-CVE registry:
+- `img.aksg.net/nodejs/nodejs:latest` (Node 24 + npm, build stage)
+- `img.aksg.net/nginx/nginx:latest` (nginx 1.30, runtime stage)
+
+**Every build MUST use the latest base.** Enforce this one of two ways:
+1. `docker build --pull ...` — forces Docker to pull base images fresh, ignoring cached copies. **Preferred** (atomic, can't be forgotten).
+2. Explicit pre-pull before building:
+   ```bash
+   docker pull img.aksg.net/nodejs/nodejs:latest
+   docker pull img.aksg.net/nginx/nginx:latest
+   docker build ...
+   ```
+With `docker compose build`, pass `--pull` as well (`docker compose build --pull`).
+
+## Test & Validation Gate (run BEFORE any image is tagged/pushed)
+A release image must only be built from code that passes the full local validation gate. Run all of these from the repo root and require exit 0:
+
+1. **Typecheck**: `npm run typecheck` (`tsc -b --pretty false`).
+2. **Lint**: `npm run lint` (`oxlint src vite.config.ts`).
+3. **Unit/component tests**: `npm test` (`vitest run`) — covers playback transitions and simulator determinism.
+4. **Production build**: `npm run build` (`tsc -b && vite build`) — must emit `dist/` with no errors.
+5. **Container build**: `docker build --pull ...` must succeed (validates the Dockerfile + hardened bases).
+6. **Container runtime + SPA deep links**: run the image and verify a deep link resolves through internal Nginx:
+   ```bash
+   docker compose up -d --build
+   curl -fsS http://localhost:8080/demos/rag | grep -q '<div id="root">'
+   curl -fsS -o /dev/null -w '%{http_code}' http://localhost:8080/ | grep -q 200
+   docker compose down
+   ```
+7. **Browser smoke (optional but recommended)**: against `npm run preview`, confirm the catalog and RAG screen render with no console errors and no horizontal overflow at desktop and mobile widths.
+
+Only after steps 1–6 pass may you proceed to tag, push, sign, and verify. Never describe an image as releasable based on a prior release or a successful build alone.
+
+## Release Procedure
+Run `VERSION=0.1.0 ./scripts/release.sh`, or run the commands directly. The script derives the minor and major rolling tags from `$VERSION` with shell parameter expansion: `${VERSION%.*}` strips the last `.<patch>` (`0.1.0` → `0.1`), `${VERSION%%.*}` strips the longest `.*` (`0.1.0` → `0`).
+
+```bash
+cd /home/opc/aidemo
+export PATH="$HOME/.local/bin:$PATH"   # cosign
+VERSION=0.1.0
+MINOR=${VERSION%.*}                    # 0.1
+MAJOR=${VERSION%%.*}                   # 0
+IMAGE=img.aksg.net/aidemo/aidemo
+
+# 0. Run the full Test & Validation Gate above FIRST (typecheck, lint, test, build, container build, deep-link curl).
+
+# 1. Align version.json with $VERSION.
+sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" version.json
+
+# 2. Pull latest base images.
+docker pull img.aksg.net/nodejs/nodejs:latest
+docker pull img.aksg.net/nginx/nginx:latest
+
+# 3. Build with --pull, tagged with all four tags (same manifest/digest).
+docker build --pull \
+  --build-arg BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  -t $IMAGE:$VERSION \
+  -t $IMAGE:$MINOR \
+  -t $IMAGE:$MAJOR \
+  -t $IMAGE:latest \
+  .
+
+# 4. Push all four tags to Harbor (uses ~/.docker/config.json auth).
+docker push $IMAGE:$VERSION
+docker push $IMAGE:$MINOR
+docker push $IMAGE:$MAJOR
+docker push $IMAGE:latest
+DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' $IMAGE:$VERSION | sed 's/.*@//')
+
+# 5. Sign with cosign (key-based), by digest.
+export COSIGN_PASSWORD="$(cat ~/.config/aidemo/cosign.password)"
+cosign sign --key ~/.config/aidemo/cosign.key --yes $IMAGE@$DIGEST
+
+# 6. Verify the signature.
+cosign verify --key ~/.config/aidemo/cosign.pub $IMAGE@$DIGEST
+
+# 7. Create + push the matching GitHub tag (requires the repo to be a git repo with committed code).
+git tag v$VERSION
+git push origin v$VERSION
+```
+
+## Vulnerability Scanning & CVE Allowlist
+- **Trivy** is Harbor's scanner. It **auto-scans on push** — no manual scan needed. Verify scan status via Harbor UI or `GET /api/v2.0/projects/aidemo/repositories/aidemo/artifacts/<tag>?with_scan_overview=true`.
+- **Release scan gate**: do not describe a new image as zero-CVE until Harbor reports scan status `Success` with 0 total findings for that exact full-semver artifact/digest. A prior clean release, `:latest` base tags, or a successful build is not sufficient evidence.
+- **CVE allowlist** is a **Harbor project-admin action** (the robot credential CANNOT set it — `403 Forbidden`). Configure it in the Harbor UI (Project `aidemo` → Configuration → CVE Allowlist) or via API with an **admin** credential.
+- After changing the allowlist, **rescan** the artifact so Trivy re-evaluates against the new list.
+
+## Operational Notes
+- **Re-pushing a mutable rolling tag over an already-signed manifest**: Harbor may return `412 Precondition Failed` when overwriting a signed manifest with an unsigned push. This applies to all mutable rolling tags — `latest`, `0`, and `0.1`. If it happens, delete the old tag in Harbor first, or push by digest and re-point the tag. The full-semver tag is immutable and never hits this.
+- **Harbor content trust is a pull-side policy**: it blocks *pulls* of unsigned images, not pushes. The required sequence is still push → `cosign sign` (uploads the signature). A freshly pushed image is unsigned until `cosign sign` completes — pulls will fail in that window. Because all four tags share one manifest, there is a single signing step; all four tags become pullable once that one signature lands.
+- **Sign by digest (default)**: the procedure signs `$IMAGE@$DIGEST` rather than `$IMAGE:$TAG`. This is the integrity-preserving form cosign recommends. Since all four tags point at the same manifest, one digest signature covers all four tags.
+- **Secrets**: Harbor credentials in `~/.docker/config.json`; cosign private key + password in `~/.config/aidemo/`. Neither is ever committed to the repo. Never print the `.auth` field of `~/.docker/config.json` (it contains base64-encoded credentials).

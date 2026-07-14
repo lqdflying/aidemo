@@ -1,0 +1,55 @@
+# External Nginx reverse proxy for aidemo.
+# Place this in the user's front-line Nginx (NOT inside the container).
+# Responsibilities: public domain, TLS termination, reverse proxy to the
+# aidemo container, and optional /api proxy to a separately deployed backend.
+#
+# 1. Point server_name at the real domain.
+# 2. Set the TLS certificate paths.
+# 3. Set proxy_pass upstreams to the host ports mapped from the containers.
+
+server {
+    listen 80;
+    server_name aidemo.example.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name aidemo.example.com;
+
+    ssl_certificate     /etc/nginx/ssl/aidemo.example.com/fullchain.pem;
+    ssl_certificate_key /etc/nginx/ssl/aidemo.example.com/privkey.pem;
+
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    # Proxy to the aidemo container's internal Nginx (serves the SPA).
+    # Host port 8080 is mapped from the container's port 80 (see docker-compose.yml).
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Optional /api reverse proxy to a separately deployed backend.
+    # Unused in v0.1.0; enable when a live RAG backend exists.
+    location /api/ {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+
+        # SSE-friendly settings for streaming generation.
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 600s;
+        chunked_transfer_encoding on;
+    }
+}

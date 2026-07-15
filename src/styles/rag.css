@@ -1,8 +1,8 @@
-.rag-demo {
+.walkthrough-demo {
   padding: 40px 0 96px;
 }
 
-.rag-hero {
+.walkthrough-hero {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
   gap: 56px;
@@ -10,11 +10,11 @@
   padding: 12px 0 48px;
 }
 
-.rag-hero__title {
+.walkthrough-hero__title {
   margin-top: 54px;
 }
 
-.rag-hero h1 {
+.walkthrough-hero h1 {
   max-width: 780px;
   margin: 15px 0 0;
   font-family: "Space Grotesk Variable", sans-serif;
@@ -24,11 +24,11 @@
   line-height: 1;
 }
 
-.rag-hero__summary {
+.walkthrough-hero__summary {
   padding-bottom: 5px;
 }
 
-.rag-hero__summary > div {
+.walkthrough-hero__summary > div {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -36,7 +36,7 @@
   color: var(--color-retrieval);
 }
 
-.rag-hero__summary > div svg {
+.walkthrough-hero__summary > div svg {
   width: 30px;
   height: 30px;
   padding: 6px;
@@ -45,24 +45,24 @@
   background: var(--color-retrieval-soft);
 }
 
-.rag-hero__summary > div svg:nth-of-type(2) {
+.walkthrough-hero__summary > div svg:nth-of-type(2) {
   color: var(--color-evidence);
   border-color: #c8e2d6;
   background: var(--color-evidence-soft);
 }
 
-.rag-hero__summary > div svg:nth-of-type(3) {
+.walkthrough-hero__summary > div svg:nth-of-type(3) {
   color: var(--color-generation);
   border-color: #d9cfee;
   background: var(--color-generation-soft);
 }
 
-.rag-hero__summary > div span {
+.walkthrough-hero__summary > div span {
   width: 34px;
   border-top: 1px dashed var(--color-border-strong);
 }
 
-.rag-hero__summary p {
+.walkthrough-hero__summary p {
   max-width: 380px;
   margin: 0;
   color: var(--color-ink-soft);
@@ -70,7 +70,7 @@
   line-height: 1.65;
 }
 
-.rag-workspace {
+.walkthrough-workspace {
   position: relative;
   overflow: hidden;
   border: 1px solid var(--color-border-strong);
@@ -79,7 +79,7 @@
   box-shadow: 0 24px 70px rgba(38, 57, 82, 0.09);
 }
 
-.rag-workspace__progress {
+.walkthrough-progress {
   position: absolute;
   z-index: 3;
   top: 0;
@@ -90,7 +90,7 @@
   background: #e9edf3;
 }
 
-.rag-workspace__progress span {
+.walkthrough-progress span {
   display: block;
   height: 100%;
   border-radius: 0 2px 2px 0;
@@ -103,9 +103,9 @@
   transition: width 260ms ease-out;
 }
 
-.rag-timeline {
+.walkthrough-timeline {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(var(--phase-count, 3), 1fr);
   padding: 24px 28px 20px;
   border-bottom: 1px solid var(--color-border);
   background: #fbfcfe;
@@ -193,7 +193,7 @@
   background: var(--color-evidence-soft);
 }
 
-.rag-workspace__main {
+.walkthrough-workspace__main {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 260px;
   min-height: 550px;
@@ -1109,7 +1109,7 @@
   height: 10px;
 }
 
-.rag-explanation {
+.walkthrough-explanation {
   display: flex;
   min-width: 0;
   flex-direction: column;
@@ -1117,7 +1117,7 @@
   background: var(--color-surface);
 }
 
-.rag-explanation__label {
+.walkthrough-explanation__label {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1128,12 +1128,12 @@
   text-transform: uppercase;
 }
 
-.rag-explanation__label svg {
+.walkthrough-explanation__label svg {
   width: 15px;
   height: 15px;
 }
 
-.rag-explanation h2 {
+.walkthrough-explanation h2 {
   margin: 24px 0 12px;
   font-family: "Space Grotesk Variable", sans-serif;
   font-size: 24px;
@@ -1142,14 +1142,14 @@
   line-height: 1.08;
 }
 
-.rag-explanation > p {
+.walkthrough-explanation > p {
   margin: 0;
   color: var(--color-ink-soft);
   font-size: 13px;
   line-height: 1.65;
 }
 
-.rag-explanation__footer {
+.walkthrough-explanation__footer {
   display: grid;
   gap: 10px;
   margin-top: auto;
@@ -1162,24 +1162,24 @@
   text-transform: uppercase;
 }
 
-.rag-explanation__footer span {
+.walkthrough-explanation__footer span {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 5px;
 }
 
-.rag-explanation__footer svg {
+.walkthrough-explanation__footer svg {
   width: 13px;
   height: 13px;
 }
 
-.rag-explanation__footer span:first-child {
+.walkthrough-explanation__footer span:first-child {
   justify-content: flex-start;
   color: var(--color-evidence);
 }
 
-.rag-controls {
+.walkthrough-controls {
   display: flex;
   min-height: 78px;
   align-items: center;
@@ -1190,8 +1190,8 @@
   background: #fbfcfe;
 }
 
-.rag-controls__primary,
-.rag-controls__secondary,
+.walkthrough-controls__primary,
+.walkthrough-controls__secondary,
 .speed-control {
   display: flex;
   align-items: center;
@@ -1273,8 +1273,15 @@
   font-weight: 700;
 }
 
-.play-button:hover {
+.play-button:hover:not(:disabled) {
   background: var(--color-retrieval);
+}
+
+.play-button:disabled,
+.text-button:disabled,
+.phase-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .play-button svg {
@@ -1317,8 +1324,25 @@
   font-weight: 700;
 }
 
-.text-button:hover {
+.text-button:hover:not(:disabled) {
   color: var(--color-retrieval);
+}
+
+.blocked-indicator {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  color: var(--color-input);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.blocked-indicator svg {
+  width: 15px;
+  height: 15px;
 }
 
 .text-button svg {
@@ -1490,7 +1514,7 @@
 }
 
 @media (max-width: 1080px) {
-  .rag-workspace__main {
+  .walkthrough-workspace__main {
     grid-template-columns: 1fr;
   }
 
@@ -1499,15 +1523,15 @@
     border-bottom: 1px solid var(--color-border);
   }
 
-  .rag-explanation {
+  .walkthrough-explanation {
     min-height: 190px;
   }
 
-  .rag-explanation h2 {
+  .walkthrough-explanation h2 {
     margin-top: 16px;
   }
 
-  .rag-explanation__footer {
+  .walkthrough-explanation__footer {
     display: flex;
     justify-content: space-between;
     margin-top: 24px;
@@ -1515,19 +1539,19 @@
 }
 
 @media (max-width: 880px) {
-  .rag-hero {
+  .walkthrough-hero {
     grid-template-columns: 1fr;
     gap: 30px;
   }
 
-  .rag-hero__summary {
+  .walkthrough-hero__summary {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     align-items: center;
     gap: 24px;
   }
 
-  .rag-hero__summary > div {
+  .walkthrough-hero__summary > div {
     margin: 0;
   }
 
@@ -1552,53 +1576,53 @@
     gap: 8px;
   }
 
-  .rag-controls {
+  .walkthrough-controls {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .rag-controls__secondary {
+  .walkthrough-controls__secondary {
     width: 100%;
     justify-content: space-between;
   }
 }
 
 @media (max-width: 700px) {
-  .rag-demo {
+  .walkthrough-demo {
     padding-top: 28px;
   }
 
-  .rag-hero {
+  .walkthrough-hero {
     padding-bottom: 34px;
   }
 
-  .rag-hero__title {
+  .walkthrough-hero__title {
     margin-top: 42px;
   }
 
-  .rag-hero h1 {
+  .walkthrough-hero h1 {
     font-size: 42px;
   }
 
-  .rag-hero__summary {
+  .walkthrough-hero__summary {
     display: block;
   }
 
-  .rag-hero__summary > div {
+  .walkthrough-hero__summary > div {
     margin-bottom: 16px;
   }
 
-  .rag-hero__summary > div span {
+  .walkthrough-hero__summary > div span {
     width: 22px;
   }
 
-  .rag-workspace {
+  .walkthrough-workspace {
     margin-right: -5px;
     margin-left: -5px;
     border-radius: 14px;
   }
 
-  .rag-timeline {
+  .walkthrough-timeline {
     grid-template-columns: 1fr;
     gap: 4px;
     padding: 18px;
@@ -1729,19 +1753,19 @@
     position: relative;
   }
 
-  .rag-explanation {
+  .walkthrough-explanation {
     padding: 24px 20px;
   }
 
-  .rag-explanation__footer {
+  .walkthrough-explanation__footer {
     display: grid;
   }
 
-  .rag-controls {
+  .walkthrough-controls {
     padding: 14px;
   }
 
-  .rag-controls__primary {
+  .walkthrough-controls__primary {
     width: 100%;
   }
 
@@ -1749,7 +1773,7 @@
     flex: 1;
   }
 
-  .rag-controls__secondary {
+  .walkthrough-controls__secondary {
     align-items: stretch;
     flex-wrap: wrap;
   }
@@ -1929,7 +1953,7 @@
   font-size: 11px;
 }
 
-.rag-workspace__main {
+.walkthrough-workspace__main {
   grid-template-columns: minmax(0, 1fr) 300px;
 }
 
@@ -2137,16 +2161,16 @@
   height: 19px;
 }
 
-.rag-explanation__label,
-.rag-explanation__footer {
+.walkthrough-explanation__label,
+.walkthrough-explanation__footer {
   font-size: 11px;
 }
 
-.rag-explanation h2 {
+.walkthrough-explanation h2 {
   font-size: 28px;
 }
 
-.rag-explanation > p {
+.walkthrough-explanation > p {
   font-size: 15px;
 }
 
@@ -2174,7 +2198,7 @@
 }
 
 @media (max-width: 1080px) {
-  .rag-workspace__main {
+  .walkthrough-workspace__main {
     grid-template-columns: 1fr;
   }
 }
@@ -2879,7 +2903,7 @@
     box-shadow 180ms ease-out;
 }
 
-.phase-button:hover {
+.phase-button:hover:not(:disabled) {
   color: #fff;
   background: var(--color-evidence);
 }

@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 
 import { InternalLink } from "../../app/InternalLink";
 import { useScenePlayer } from "../../framework/useScenePlayer";
+import { WalkthroughProgress } from "../../framework/WalkthroughProgress";
 import { RagControls } from "./RagControls";
 import { RagExplanation } from "./RagExplanation";
 import { ragPhaseLabels, ragPhases, getRagPhaseFromPath, navigateToRagPhase, type RagPhase } from "./rag-routing";
@@ -48,10 +49,8 @@ function RagPhaseWorkspace({
 
   return (
     <>
-      <div className="rag-workspace__progress" aria-hidden="true">
-        <span style={{ width: `${player.progressPercent}%` }} />
-      </div>
-      <div className="rag-workspace__main">
+      <WalkthroughProgress progressPercent={player.progressPercent} />
+      <div className="walkthrough-workspace__main">
         <RagStage
           isComplete={player.state.status === "completed"}
           onEmbeddingModelOpen={() => player.controls.pause()}
@@ -143,19 +142,19 @@ export function RagDemo(): React.JSX.Element {
   };
 
   return (
-    <main className="rag-demo">
-      <section className="rag-hero">
+    <main className="walkthrough-demo">
+      <section className="walkthrough-hero">
         <div>
           <InternalLink className="back-link" href="/">
             <ArrowLeft aria-hidden="true" size={18} />
             All demos
           </InternalLink>
-          <div className="rag-hero__title">
+          <div className="walkthrough-hero__title">
             <p className="eyebrow">Interactive walkthrough</p>
             <h1>See how RAG finds evidence before it answers.</h1>
           </div>
         </div>
-        <div className="rag-hero__summary">
+        <div className="walkthrough-hero__summary">
           <div aria-hidden="true">
             <FileText />
             <span />
@@ -170,7 +169,7 @@ export function RagDemo(): React.JSX.Element {
         </div>
       </section>
 
-      <section className="rag-workspace" aria-label="RAG animation workspace">
+      <section className="walkthrough-workspace" aria-label="RAG animation workspace">
         <RagTimeline activePhase={activePhase} onSelectPhase={selectPhase} />
 
         {activePhase === "retrieve" && (

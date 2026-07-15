@@ -1,12 +1,14 @@
 # AI Demo Lab
 
-Interactive, step-by-step visual explanations of modern AI systems. The first
-module is a **Retrieval-Augmented Generation (RAG)** walkthrough that follows one
-question through indexing, retrieval, and a grounded, cited answer.
+Interactive, step-by-step visual explanations of modern AI systems. The lab now
+includes a **Retrieval-Augmented Generation (RAG)** walkthrough and an **Agent
+Orchestration** systems atlas that traces a CloudOps incident across policy,
+context, stateless models, specialist agents, MCP/RAG tools, bounded recovery,
+human approval, and a controlled outcome.
 
-The studio is built on a reusable animation framework so future demos (agent
-orchestration, semantic search, …) register metadata, scenes, events, and an
-optional runtime adapter instead of adding custom orchestration to the shell.
+The studio is built on a reusable animation framework so future demos (semantic
+search, …) register metadata, scenes, events, and an optional runtime adapter
+instead of adding custom orchestration to the shell.
 
 ## Stack
 
@@ -37,9 +39,10 @@ npm run preview      # serve the production build
 
 ```
 src/app/            shell, routing, demo catalog, registry
-src/framework/      reusable scene/event/playback/adapter contracts + hook
-src/demos/rag/      RAG simulation, three-act story, stage/timeline/controls
-src/styles/         design tokens, global + RAG styles, responsive + motion
+src/framework/      reusable scene/event/playback + walkthrough UI primitives
+src/demos/rag/      RAG simulation, three-act story, and visual stage
+src/demos/agents/   agent simulation, six-act systems atlas, stages, and inspectors
+src/styles/         design tokens, shared, RAG + agent responsive motion styles
 deploy/nginx/       internal Nginx config + external domain-proxy example
 scripts/release.sh  build -> push -> cosign sign -> verify
 version.json        single source of truth for the image version
@@ -120,7 +123,8 @@ cosign verify --key ~/.config/aidemo/cosign.pub img.aksg.net/aidemo/aidemo@<dige
 
 ## Adding a new demo
 
-1. Create `src/demos/<id>/` with a simulation/adapter, a `DemoStory`, and the
-   stage/controls/explanation components.
+1. Create `src/demos/<id>/` with a simulation/adapter, a `DemoStory`, and its
+   visual stage; reuse the walkthrough timeline, explanation, and controls from
+   `src/framework/`.
 2. Register it in `src/app/registry.ts` (`demoRegistry.register({ ... })`).
 3. The shell routes `/demos/<id>` to the registered component automatically.

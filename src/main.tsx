@@ -6,6 +6,7 @@ import { createRoot } from "react-dom/client";
 import { App } from "./app/App";
 import "./styles/global.css";
 import "./styles/rag.css";
+import "./styles/agents.css";
 
 const rootElement = document.getElementById("root");
 

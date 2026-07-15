@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 
 export type DemoAvailability = "available" | "coming-soon";
+export type DemoVisual = "rag-pipeline" | "agent-network";
 
 export interface DemoDefinition {
   readonly id: string;
@@ -13,6 +14,7 @@ export interface DemoDefinition {
   readonly estimatedMinutes: number;
   readonly availability: DemoAvailability;
   readonly accent: "retrieval" | "generation" | "evidence" | "input";
+  readonly visual: DemoVisual;
   readonly component: ComponentType;
 }
 

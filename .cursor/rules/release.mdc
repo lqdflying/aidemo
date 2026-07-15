@@ -65,11 +65,12 @@ A release image must only be built from code that passes the full local validati
    docker compose up -d --build
    curl -fsS http://localhost:8080/demos/rag | grep -q '<div id="root">'
    curl -fsS -o /dev/null -w '%{http_code}' http://localhost:8080/ | grep -q 200
-   docker compose down
+   docker compose down --remove-orphans
    ```
-7. **Browser smoke (optional but recommended)**: against `npm run preview`, confirm the catalog and RAG screen render with no console errors and no horizontal overflow at desktop and mobile widths.
+7. **Browser smoke (optional but recommended)**: against the built container or `npm run preview`, confirm the catalog and completed demos render with no console errors and no horizontal overflow at desktop and mobile widths.
+8. **Mandatory runtime cleanup**: after container and browser testing finishes, whether it passes or fails, stop and remove every temporary test container and release its host ports. For Compose use `docker compose down --remove-orphans`. For direct runs, start with `docker run --rm ...` and finish with `docker stop <test-container>`. Automated scripts should use a shell trap so cleanup still runs after an early failure. Before handoff, verify no test container remains running. Keep the built image tags available for push or later testing unless the user explicitly asks to remove them.
 
-Only after steps 1–6 pass may you proceed to tag, push, sign, and verify. Never describe an image as releasable based on a prior release or a successful build alone.
+Only after steps 1–6 pass and step 8 completes may you proceed to tag, push, sign, and verify. Never describe an image as releasable based on a prior release or a successful build alone.
 
 ## Release Procedure
 Run `VERSION=0.1.0 ./scripts/release.sh`, or run the commands directly. The script derives the minor and major rolling tags from `$VERSION` with shell parameter expansion: `${VERSION%.*}` strips the last `.<patch>` (`0.1.0` → `0.1`), `${VERSION%%.*}` strips the longest `.*` (`0.1.0` → `0`).
@@ -82,7 +83,7 @@ MINOR=${VERSION%.*}                    # 0.1
 MAJOR=${VERSION%%.*}                   # 0
 IMAGE=img.aksg.net/aidemo/aidemo
 
-# 0. Run the full Test & Validation Gate above FIRST (typecheck, lint, test, build, container build, deep-link curl).
+# 0. Run the full Test & Validation Gate above FIRST (typecheck, lint, test, build, container build, deep-link curl, and container cleanup).
 
 # 1. Align version.json with $VERSION.
 sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" version.json

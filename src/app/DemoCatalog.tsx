@@ -1,27 +1,75 @@
 import {
   ArrowUpRight,
+  Bot,
   BookOpenText,
-  Boxes,
+  BrainCircuit,
   Clock3,
+  Database,
   FileSearch,
+  Server,
+  ShieldCheck,
   Sparkles,
 } from "lucide-react";
 
 import { InternalLink } from "./InternalLink";
+import type { DemoVisual } from "./demo-registry";
 import { demoRegistry } from "./registry";
 
 const futureDemoTopics = [
-  {
-    icon: Boxes,
-    title: "Agent orchestration",
-    description: "See how tools, memory, and planning work together.",
-  },
   {
     icon: FileSearch,
     title: "Semantic search",
     description: "Explore embeddings, distance, and ranking visually.",
   },
 ] as const;
+
+function DemoCardVisual({ visual }: { readonly visual: DemoVisual }): React.JSX.Element {
+  if (visual === "agent-network") {
+    return (
+      <div
+        className="demo-card__visual demo-card__visual--agents"
+        aria-hidden="true"
+      >
+        <div className="demo-card__agent demo-card__agent--coordinator">
+          <BrainCircuit />
+          <span>Agent gateway</span>
+        </div>
+        <div className="demo-card__agent-path">
+          <span />
+          <span />
+          <span />
+        </div>
+        <div className="demo-card__agent-team">
+          <span><Bot /></span>
+          <span><Server /></span>
+          <span><Database /></span>
+          <span><ShieldCheck /></span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="demo-card__visual" aria-hidden="true">
+      <div className="demo-card__document">
+        <BookOpenText />
+        <span />
+        <span />
+        <span />
+      </div>
+      <div className="demo-card__path">
+        <span />
+        <span />
+        <span />
+      </div>
+      <div className="demo-card__answer">
+        <Sparkles />
+        <span />
+        <span />
+      </div>
+    </div>
+  );
+}
 
 export function DemoCatalog(): React.JSX.Element {
   const demos = demoRegistry.list();
@@ -46,32 +94,15 @@ export function DemoCatalog(): React.JSX.Element {
         <div className="section-heading">
           <div>
             <p className="section-heading__index">01</p>
-            <h2 id="featured-heading">Featured walkthrough</h2>
+            <h2 id="featured-heading">Featured walkthroughs</h2>
           </div>
-          <p>Start with a complete story in about three minutes.</p>
+          <p>Choose a complete, interactive story and follow every stage.</p>
         </div>
 
         <div className="demo-grid">
           {demos.map((demo) => (
             <article className="demo-card demo-card--featured" key={demo.id}>
-              <div className="demo-card__visual" aria-hidden="true">
-                <div className="demo-card__document">
-                  <BookOpenText />
-                  <span />
-                  <span />
-                  <span />
-                </div>
-                <div className="demo-card__path">
-                  <span />
-                  <span />
-                  <span />
-                </div>
-                <div className="demo-card__answer">
-                  <Sparkles />
-                  <span />
-                  <span />
-                </div>
-              </div>
+              <DemoCardVisual visual={demo.visual} />
 
               <div className="demo-card__body">
                 <div className="demo-card__meta">
@@ -83,7 +114,11 @@ export function DemoCatalog(): React.JSX.Element {
                 </div>
                 <h3>{demo.shortTitle}</h3>
                 <p>{demo.description}</p>
-                <InternalLink className="demo-card__link" href={demo.path}>
+                <InternalLink
+                  aria-label={`Start ${demo.shortTitle} walkthrough`}
+                  className="demo-card__link"
+                  href={demo.path}
+                >
                   Start walkthrough
                   <ArrowUpRight aria-hidden="true" size={18} />
                 </InternalLink>

@@ -1,12 +1,36 @@
 import { ArrowLeft, CodeXml, FlaskConical, Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import versionMetadata from "../../version.json";
 import { DemoCatalog } from "./DemoCatalog";
 import { APP_NAVIGATION_EVENT, InternalLink } from "./InternalLink";
 import { demoRegistry } from "./registry";
 
+const SOURCE_REPOSITORY_URL = "https://github.com/lqdflying/aidemo";
+
 function getCurrentPath(): string {
   return window.location.pathname.replace(/\/+$/, "") || "/";
+}
+
+function SiteBrand(): React.JSX.Element {
+  return (
+    <InternalLink
+      aria-label="CloudOps AI Demo Lab home"
+      className="brand"
+      href="/"
+    >
+      <span className="brand__icon">
+        <FlaskConical aria-hidden="true" size={17} />
+      </span>
+      <span className="brand__copy">
+        <strong>CloudOps AI Demo Lab</strong>
+        <span className="brand__meta">
+          <small>Visual explanations</small>
+          <small className="brand__version">v{versionMetadata.version}</small>
+        </span>
+      </span>
+    </InternalLink>
+  );
 }
 
 export function App(): React.JSX.Element {
@@ -33,15 +57,7 @@ export function App(): React.JSX.Element {
     return (
       <div className="app-shell">
         <header className="site-header">
-          <InternalLink className="brand" href="/" aria-label="AI Demo Lab home">
-            <span className="brand__icon">
-              <FlaskConical aria-hidden="true" size={17} />
-            </span>
-            <span>
-              <strong>AI Demo Lab</strong>
-              <small>Visual explanations</small>
-            </span>
-          </InternalLink>
+          <SiteBrand />
           <InternalLink className="header-link" href="/">
             <ArrowLeft aria-hidden="true" size={16} />
             Back to lab
@@ -55,15 +71,7 @@ export function App(): React.JSX.Element {
   return (
     <div className="app-shell">
       <header className="site-header">
-        <InternalLink className="brand" href="/" aria-label="AI Demo Lab home">
-          <span className="brand__icon">
-            <FlaskConical aria-hidden="true" size={17} />
-          </span>
-          <span>
-            <strong>AI Demo Lab</strong>
-            <small>Visual explanations</small>
-          </span>
-        </InternalLink>
+        <SiteBrand />
         <nav
           className={`site-nav${isNavigationOpen ? " site-nav--open" : ""}`}
           aria-label="Primary navigation"
@@ -74,7 +82,12 @@ export function App(): React.JSX.Element {
           <a href="#future-heading" onClick={() => setIsNavigationOpen(false)}>
             Framework
           </a>
-          <a href="https://github.com" rel="noreferrer" target="_blank">
+          <a
+            aria-label="Source on GitHub"
+            href={SOURCE_REPOSITORY_URL}
+            rel="noreferrer"
+            target="_blank"
+          >
             <CodeXml aria-hidden="true" size={17} />
             Source
           </a>

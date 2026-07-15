@@ -17,6 +17,13 @@ export type RagEventKind =
   | "generate-answer"
   | "cite-answer";
 
+export type RagVectorDbEventKind =
+  | "show-record"
+  | "embed-record"
+  | "serialize-record"
+  | "store-record"
+  | "search-record";
+
 export interface RagDocument {
   readonly id: string;
   readonly title: string;
@@ -32,6 +39,22 @@ export interface RagChunk {
   readonly label: string;
   readonly text: string;
   readonly vector: readonly number[];
+}
+
+export interface RagEmbeddingMetadata {
+  readonly modelName: string;
+  readonly dimensions: number;
+  readonly outputDimensions: number;
+  readonly dimensionsNote: string;
+}
+
+export interface RagVectorRecord {
+  readonly id: string;
+  readonly vector: readonly number[];
+  readonly documentId: string;
+  readonly documentTitle: string;
+  readonly chunkLabel: string;
+  readonly text: string;
 }
 
 export interface RagSearchResult {
@@ -51,6 +74,9 @@ export interface RagSimulation {
   readonly question: string;
   readonly documents: readonly RagDocument[];
   readonly allChunks: readonly RagChunk[];
+  readonly embedding: RagEmbeddingMetadata;
+  readonly vectorRecords: readonly RagVectorRecord[];
+  readonly queryVector: readonly number[];
   readonly searchResults: readonly RagSearchResult[];
   readonly selectedEvidence: readonly RagSearchResult[];
   readonly contextWindow: readonly EvidenceReference[];

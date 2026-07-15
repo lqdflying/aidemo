@@ -1,52 +1,43 @@
 import { Check, Circle } from "lucide-react";
 
-import type { DemoScene } from "../../framework/types";
-import type { PlaybackStatus } from "../../framework/playback";
-import type { RagEventKind } from "./rag-types";
+import type { RagPhase } from "./rag-routing";
+import { ragPhaseLabels, ragPhases } from "./rag-routing";
 
 interface RagTimelineProps {
-  readonly scenes: readonly DemoScene<RagEventKind>[];
-  readonly activeSceneIndex: number;
-  readonly activeEventIndex: number;
-  readonly status: PlaybackStatus;
-  readonly onSelectScene: (sceneIndex: number) => void;
+  readonly activePhase: RagPhase;
+  readonly onSelectPhase: (phase: RagPhase) => void;
 }
 
 export function RagTimeline({
-  scenes,
-  activeSceneIndex,
-  activeEventIndex,
-  status,
-  onSelectScene,
+  activePhase,
+  onSelectPhase,
 }: RagTimelineProps): React.JSX.Element {
+  const activePhaseIndex = ragPhases.indexOf(activePhase);
+
   return (
-    <nav className="rag-timeline" aria-label="RAG walkthrough steps">
-      {scenes.map((scene, sceneIndex) => {
-        const isCurrentScene = sceneIndex === activeSceneIndex;
-        const isCompletedScene =
-          sceneIndex < activeSceneIndex ||
-          (isCurrentScene &&
-            activeEventIndex >= scene.events.length - 1 &&
-            status === "completed");
+    <nav className="rag-timeline" aria-label="RAG walkthrough pages">
+      {ragPhases.map((phase, phaseIndex) => {
+        const isCurrentPhase = phase === activePhase;
+        const isCompletedPhase = phaseIndex < activePhaseIndex;
 
         return (
           <button
-            aria-current={isCurrentScene ? "step" : undefined}
-            className={`timeline-step${isCurrentScene ? " is-current" : ""}${isCompletedScene ? " is-complete" : ""}`}
-            key={scene.id}
-            onClick={() => onSelectScene(sceneIndex)}
+            aria-current={isCurrentPhase ? "page" : undefined}
+            className={`timeline-step${isCurrentPhase ? " is-current" : ""}${isCompletedPhase ? " is-complete" : ""}`}
+            key={phase}
+            onClick={() => onSelectPhase(phase)}
             type="button"
           >
             <span className="timeline-step__marker">
-              {isCompletedScene ? (
+              {isCompletedPhase ? (
                 <Check aria-hidden="true" size={14} />
               ) : (
                 <Circle aria-hidden="true" size={10} />
               )}
             </span>
             <span className="timeline-step__copy">
-              <small>Act {scene.act}</small>
-              <strong>{scene.shortTitle}</strong>
+              <small>Act {phaseIndex + 1}</small>
+              <strong>{ragPhaseLabels[phase]}</strong>
             </span>
           </button>
         );

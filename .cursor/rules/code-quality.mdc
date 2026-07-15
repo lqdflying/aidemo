@@ -1,0 +1,36 @@
+---
+description: Project-wide architecture, coding, testing, and verification standards
+alwaysApply: true
+---
+
+# AI Demo Lab Engineering Rules
+
+## Scope and change discipline
+- Use Node.js 24 or newer, ESM, React, strict TypeScript, Vite, Vitest, and the npm scripts in `package.json`.
+- Inspect relevant source, tests, configuration, and working-tree changes before editing.
+- Preserve unrelated user changes. Keep edits scoped to the requested behavior and avoid speculative abstractions or broad reformatting.
+- Reuse existing dependencies and project patterns. Add a dependency only when it solves a concrete need better than the existing stack.
+
+## Architecture
+- Keep app shell, catalog, registry, and shared navigation in `src/app`.
+- Keep reusable story, playback, and runtime contracts in `src/framework`; do not couple them to one demo.
+- Keep each demo's story, simulator, types, components, routing, and tests together in `src/demos/<demo>`.
+- Keep global tokens and shared foundations in `src/styles/global.css`; keep demo-specific presentation in its demo stylesheet.
+- Model guided animation with declarative story events and `useScenePlayer`, not component-owned timer chains.
+- Keep simulations deterministic and separate data/runtime logic from rendering. Put external implementations behind the existing runtime adapter boundary.
+
+## TypeScript and React
+- Use descriptive names, explicit exported signatures, readonly data contracts where practical, guard clauses, and exhaustive typed state.
+- Do not use `any`, unchecked casts, silent error handling, deep nesting, or comments that merely narrate obvious code.
+- Use function components and hooks. Derive state instead of duplicating it, clean up effects, and keep DOM access isolated to browser behavior that React cannot express.
+- Use `InternalLink` for same-app links and preserve normal anchor behavior for modified clicks, new tabs, and external destinations.
+- Preserve semantic HTML, keyboard operation, focus management, accessible names, deep links, and reduced-motion behavior.
+- Follow `.cursor/rules/ui-ux-style.mdc` for all visual, responsive, interaction, and accessibility decisions.
+
+## Tests and verification
+- Add colocated `*.test.ts` or `*.test.tsx` regressions at the lowest useful layer and at the public UI boundary when composition matters.
+- Test observable behavior with Vitest and Testing Library; prefer roles and accessible names over implementation selectors.
+- Cover success, boundary, invalid-input, navigation, playback, and cleanup behavior relevant to the change.
+- Run `npm run typecheck`, `npm run lint`, `npm run test`, and `npm run build` before declaring implementation work complete.
+- For UI changes, also verify desktop and mobile layouts, keyboard/focus behavior, reduced motion, deep links, and horizontal overflow in a real browser.
+- For images or releases, follow the additional mandatory gate in `.cursor/rules/release.mdc`.

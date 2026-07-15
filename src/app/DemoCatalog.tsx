@@ -7,6 +7,7 @@ import {
   Sparkles,
 } from "lucide-react";
 
+import { InternalLink } from "./InternalLink";
 import { demoRegistry } from "./registry";
 
 const futureDemoTopics = [
@@ -82,10 +83,10 @@ export function DemoCatalog(): React.JSX.Element {
                 </div>
                 <h3>{demo.shortTitle}</h3>
                 <p>{demo.description}</p>
-                <a className="demo-card__link" href={demo.path}>
+                <InternalLink className="demo-card__link" href={demo.path}>
                   Start walkthrough
                   <ArrowUpRight aria-hidden="true" size={18} />
-                </a>
+                </InternalLink>
               </div>
             </article>
           ))}

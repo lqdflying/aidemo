@@ -1,7 +1,8 @@
 import { ArrowLeft, CodeXml, FlaskConical, Menu, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { DemoCatalog } from "./DemoCatalog";
+import { APP_NAVIGATION_EVENT, InternalLink } from "./InternalLink";
 import { demoRegistry } from "./registry";
 
 function getCurrentPath(): string {
@@ -10,7 +11,21 @@ function getCurrentPath(): string {
 
 export function App(): React.JSX.Element {
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
-  const currentPath = getCurrentPath();
+  const [currentPath, setCurrentPath] = useState<string>(getCurrentPath);
+
+  useEffect(() => {
+    const handleHistoryChange = (): void => {
+      setCurrentPath(getCurrentPath());
+    };
+
+    window.addEventListener("popstate", handleHistoryChange);
+    window.addEventListener(APP_NAVIGATION_EVENT, handleHistoryChange);
+    return () => {
+      window.removeEventListener("popstate", handleHistoryChange);
+      window.removeEventListener(APP_NAVIGATION_EVENT, handleHistoryChange);
+    };
+  }, []);
+
   const currentDemo = demoRegistry.getByPath(currentPath);
 
   if (currentDemo) {
@@ -18,7 +33,7 @@ export function App(): React.JSX.Element {
     return (
       <div className="app-shell">
         <header className="site-header">
-          <a className="brand" href="/" aria-label="AI Demo Lab home">
+          <InternalLink className="brand" href="/" aria-label="AI Demo Lab home">
             <span className="brand__icon">
               <FlaskConical aria-hidden="true" size={17} />
             </span>
@@ -26,11 +41,11 @@ export function App(): React.JSX.Element {
               <strong>AI Demo Lab</strong>
               <small>Visual explanations</small>
             </span>
-          </a>
-          <a className="header-link" href="/">
+          </InternalLink>
+          <InternalLink className="header-link" href="/">
             <ArrowLeft aria-hidden="true" size={16} />
             Back to lab
-          </a>
+          </InternalLink>
         </header>
         <CurrentDemo />
       </div>
@@ -40,7 +55,7 @@ export function App(): React.JSX.Element {
   return (
     <div className="app-shell">
       <header className="site-header">
-        <a className="brand" href="/" aria-label="AI Demo Lab home">
+        <InternalLink className="brand" href="/" aria-label="AI Demo Lab home">
           <span className="brand__icon">
             <FlaskConical aria-hidden="true" size={17} />
           </span>
@@ -48,7 +63,7 @@ export function App(): React.JSX.Element {
             <strong>AI Demo Lab</strong>
             <small>Visual explanations</small>
           </span>
-        </a>
+        </InternalLink>
         <nav
           className={`site-nav${isNavigationOpen ? " site-nav--open" : ""}`}
           aria-label="Primary navigation"

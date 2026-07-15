@@ -57,7 +57,7 @@ A release image must only be built from code that passes the full local validati
 
 1. **Typecheck**: `npm run typecheck` (`tsc -b --pretty false`).
 2. **Lint**: `npm run lint` (`oxlint src vite.config.ts`).
-3. **Unit/component tests**: `npm test` (`vitest run`) — covers playback transitions and simulator determinism.
+3. **Unit/component tests**: `npm run test` (`vitest run`) — covers playback transitions and simulator determinism. Use the explicit script form so Bun-compatible `npm` shims do not intercept `npm test`.
 4. **Production build**: `npm run build` (`tsc -b && vite build`) — must emit `dist/` with no errors.
 5. **Container build**: `docker build --pull ...` must succeed (validates the Dockerfile + hardened bases).
 6. **Container runtime + SPA deep links**: run the image and verify a deep link resolves through internal Nginx:

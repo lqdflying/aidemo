@@ -5,6 +5,7 @@ export type DemoAvailability = "available" | "coming-soon";
 export interface DemoDefinition {
   readonly id: string;
   readonly path: `/demos/${string}`;
+  readonly aliases?: readonly `/demos/${string}`[];
   readonly title: string;
   readonly shortTitle: string;
   readonly description: string;
@@ -24,14 +25,21 @@ export class DemoRegistry {
       throw new Error(`A demo with ID "${demoDefinition.id}" is already registered.`);
     }
 
-    if (this.#demoByPath.has(demoDefinition.path)) {
-      throw new Error(
-        `A demo with path "${demoDefinition.path}" is already registered.`,
-      );
+    const registeredPaths = [
+      demoDefinition.path,
+      ...(demoDefinition.aliases ?? []),
+    ];
+
+    for (const path of registeredPaths) {
+      if (this.#demoByPath.has(path)) {
+        throw new Error(`A demo with path "${path}" is already registered.`);
+      }
     }
 
     this.#demoById.set(demoDefinition.id, demoDefinition);
-    this.#demoByPath.set(demoDefinition.path, demoDefinition);
+    for (const path of registeredPaths) {
+      this.#demoByPath.set(path, demoDefinition);
+    }
   }
 
   getByPath(path: string): DemoDefinition | undefined {

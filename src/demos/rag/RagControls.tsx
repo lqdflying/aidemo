@@ -15,11 +15,13 @@ interface RagControlsProps {
   readonly speed: PlaybackSpeed;
   readonly canGoPrevious: boolean;
   readonly canGoNext: boolean;
+  readonly nextPhaseLabel: string;
   readonly onToggle: () => void;
   readonly onPrevious: () => void;
   readonly onNext: () => void;
   readonly onRestart: () => void;
   readonly onSkip: () => void;
+  readonly onNextPhase: () => void;
   readonly onSpeedChange: (speed: PlaybackSpeed) => void;
 }
 
@@ -30,11 +32,13 @@ export function RagControls({
   speed,
   canGoPrevious,
   canGoNext,
+  nextPhaseLabel,
   onToggle,
   onPrevious,
   onNext,
   onRestart,
   onSkip,
+  onNextPhase,
   onSpeedChange,
 }: RagControlsProps): React.JSX.Element {
   const isPlaying = status === "playing";
@@ -44,7 +48,7 @@ export function RagControls({
     <div className="rag-controls" aria-label="Animation controls">
       <div className="rag-controls__primary">
         <button
-          aria-label="Previous step"
+          aria-label="Previous animation step"
           className="icon-button"
           disabled={!canGoPrevious}
           onClick={onPrevious}
@@ -67,7 +71,7 @@ export function RagControls({
           {hasCompleted ? "Replay" : isPlaying ? "Pause" : "Play"}
         </button>
         <button
-          aria-label="Next step"
+          aria-label="Next animation step"
           className="icon-button"
           disabled={!canGoNext}
           onClick={onNext}
@@ -79,9 +83,9 @@ export function RagControls({
       </div>
 
       <div className="rag-controls__secondary">
-        <span className="loop-indicator" title="The walkthrough restarts after citations">
+        <span className="loop-indicator" title="This page restarts after its final step">
           <Repeat2 aria-hidden="true" />
-          Auto loop
+          Page loop
         </span>
         <div className="speed-control" aria-label="Playback speed">
           {playbackSpeeds.map((playbackSpeed) => (
@@ -99,20 +103,24 @@ export function RagControls({
         <button
           className="text-button"
           onClick={onRestart}
-          title="Restart from the first step"
+          title="Restart this page"
           type="button"
         >
           <RotateCcw aria-hidden="true" />
-          Restart
+          Restart page
         </button>
         <button
           className="text-button"
           onClick={onSkip}
-          title="Skip to the final answer"
+          title="Skip to the final step on this page"
           type="button"
         >
           <SkipForward aria-hidden="true" />
-          Skip animation
+          Skip page
+        </button>
+        <button className="phase-button" onClick={onNextPhase} type="button">
+          {nextPhaseLabel}
+          <ChevronRight aria-hidden="true" />
         </button>
       </div>
     </div>

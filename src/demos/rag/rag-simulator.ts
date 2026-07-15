@@ -7,9 +7,18 @@ import type {
   RagRuntimeResult,
   RagSearchResult,
   RagSimulation,
+  RagVectorRecord,
 } from "./rag-types";
 
 const SIMULATION_SEED = 1701;
+const EMBEDDING_MODEL = {
+  modelName: "text-embedding-3-small",
+  dimensions: 4,
+  outputDimensions: 1536,
+  dimensionsNote:
+    "The demo projects each production embedding into four values for teaching; text-embedding-3-small outputs 1,536 dimensions by default in production.",
+} as const;
+const QUERY_VECTOR = [0.86, 0.33, 0.78, 0.57] as const;
 
 const documentSeeds: readonly Omit<RagDocument, "chunks">[] = [
   {
@@ -153,6 +162,27 @@ function scoreChunk(question: string, chunkSeed: ChunkSeed, index: number): numb
   );
 }
 
+function createVectorRecords(
+  documents: readonly RagDocument[],
+  allChunks: readonly RagChunk[],
+): readonly RagVectorRecord[] {
+  return allChunks.map((chunk) => {
+    const document = documents.find((candidate) => candidate.id === chunk.documentId);
+    if (!document) {
+      throw new Error(`RAG simulation data is missing for document "${chunk.documentId}".`);
+    }
+
+    return {
+      id: `record-${chunk.id}`,
+      vector: chunk.vector,
+      documentId: document.id,
+      documentTitle: document.title,
+      chunkLabel: chunk.label,
+      text: chunk.text,
+    };
+  });
+}
+
 function createContextWindow(
   selectedEvidence: readonly RagSearchResult[],
 ): readonly EvidenceReference[] {
@@ -230,6 +260,9 @@ export function simulateRag(question: string): RagRuntimeResult {
     question: normalizedQuestion,
     documents,
     allChunks,
+    embedding: EMBEDDING_MODEL,
+    vectorRecords: createVectorRecords(documents, allChunks),
+    queryVector: QUERY_VECTOR,
     searchResults,
     selectedEvidence,
     contextWindow,

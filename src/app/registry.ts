@@ -6,6 +6,7 @@ export const demoRegistry = new DemoRegistry();
 demoRegistry.register({
   id: "rag",
   path: "/demos/rag",
+  aliases: ["/demos/rag/index", "/demos/rag/retrieve", "/demos/rag/generate"],
   title: "Retrieval-Augmented Generation",
   shortTitle: "How RAG works",
   eyebrow: "Search + generate",

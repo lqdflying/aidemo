@@ -10,20 +10,27 @@ import {
   Search,
   Sparkles,
 } from "lucide-react";
+import { useState } from "react";
 
 import type { StoryPosition } from "../../framework/story";
 import type { PlaybackStatus } from "../../framework/playback";
+import { EmbeddingModelDialog } from "./EmbeddingModelDialog";
 import type {
   RagEventKind,
   RagSearchResult,
   RagSimulation,
 } from "./rag-types";
+import type { RagPhase } from "./rag-routing";
+import { VectorDbDialog } from "./VectorDbDialog";
 
 interface RagStageProps {
   readonly simulation: RagSimulation;
   readonly position: StoryPosition<RagEventKind>;
   readonly isComplete: boolean;
   readonly playbackStatus: PlaybackStatus;
+  readonly phase?: RagPhase;
+  readonly onEmbeddingModelOpen?: () => void;
+  readonly onVectorDbOpen?: () => void;
 }
 
 type PipelineNodeState = "pending" | "active" | "complete";
@@ -94,14 +101,20 @@ function IndexStage({
   simulation,
   eventKind,
   isComplete,
+  onOpenEmbeddingModel,
+  onOpenVectorDb,
 }: {
   readonly simulation: RagSimulation;
   readonly eventKind: RagEventKind;
   readonly isComplete: boolean;
+  readonly onOpenEmbeddingModel: () => void;
+  readonly onOpenVectorDb: () => void;
 }): React.JSX.Element {
   const showChunks = hasReached(eventKind, "split-chunks");
   const showVectors = hasReached(eventKind, "embed-chunks");
   const showDatabase = hasReached(eventKind, "store-vectors");
+  const databaseState = getNodeState(eventKind, "store-vectors", isComplete);
+  const transferVector = simulation.allChunks.at(0)?.vector ?? [];
 
   return (
     <section
@@ -152,7 +165,10 @@ function IndexStage({
         </div>
       </section>
 
-      <div className={`stage-connector${showChunks ? " is-active" : ""}`} aria-hidden="true">
+      <div
+        className={`stage-connector stage-connector--chunks${showChunks ? " is-active" : ""}`}
+        aria-hidden="true"
+      >
         <span />
       </div>
 
@@ -191,32 +207,75 @@ function IndexStage({
         </div>
       </section>
 
-      <div className={`stage-connector${showVectors ? " is-active" : ""}`} aria-hidden="true">
+      <div
+        className={`stage-connector stage-connector--embedding${showVectors ? " is-active" : ""}`}
+        aria-hidden="true"
+      >
         <span />
       </div>
 
-      <section
-        className={`vector-store pipeline-node${showDatabase ? " is-visible" : ""}`}
-        aria-label="Vector database"
-        data-state={getNodeState(eventKind, "store-vectors", isComplete)}
+      <button
+        className={`embedding-model pipeline-node${showVectors ? " is-visible" : ""}`}
+        aria-label="Open embedding model inventory"
+        data-state={getNodeState(eventKind, "embed-chunks", isComplete)}
+        disabled={!showVectors}
+        onClick={onOpenEmbeddingModel}
+        type="button"
       >
-        <div className="vector-store__top">
+        <span className="embedding-model__icon"><Sparkles aria-hidden="true" /></span>
+        <small>Embedding model</small>
+        <strong>{simulation.embedding.modelName}</strong>
+        <span className="embedding-model__metric">
+          <span>{simulation.embedding.outputDimensions.toLocaleString()}D</span>
+          <small>production vector</small>
+        </span>
+        <span className="embedding-model__note">
+          {simulation.embedding.dimensions}-value teaching projection
+        </span>
+      </button>
+
+      <div
+        className={`stage-connector stage-connector--database${showDatabase ? " is-active" : ""}`}
+        aria-hidden="true"
+        data-state={databaseState}
+      >
+        <div className="vector-transfer-packet">
+          {transferVector.map((value, vectorIndex) => (
+            <i
+              key={`${value}-${vectorIndex}`}
+              style={{
+                "--vector-height": `${Math.max(24, value * 100)}%`,
+              } as React.CSSProperties}
+            />
+          ))}
+        </div>
+      </div>
+
+      <button
+        className={`vector-store pipeline-node${showDatabase ? " is-visible" : ""}`}
+        aria-label="Open Vector DB record details"
+        data-state={databaseState}
+        disabled={!showDatabase}
+        onClick={onOpenVectorDb}
+        type="button"
+      >
+        <span className="vector-store__top">
           <Database aria-hidden="true" />
-          <div>
+          <span>
             <small>Searchable memory</small>
             <strong>Vector DB</strong>
-          </div>
-        </div>
-        <div className="database-visual" aria-hidden="true">
+          </span>
+        </span>
+        <span className="database-visual" aria-hidden="true">
           <span />
           <span />
           <span />
-        </div>
-        <div className="vector-store__metric">
+        </span>
+        <span className="vector-store__metric">
           <strong>{showDatabase ? simulation.indexedChunkCount : 0}</strong>
-          <span>{showDatabase ? "chunks indexed" : "waiting for vectors"}</span>
-        </div>
-      </section>
+          <span>{showDatabase ? "chunks indexed · open details" : "waiting for vectors"}</span>
+        </span>
+      </button>
       </div>
     </section>
   );
@@ -274,7 +333,7 @@ function RetrieveStage({
   const showQueryVector = hasReached(eventKind, "embed-query");
   const showSearchResults = hasReached(eventKind, "search-index");
   const showSelection = hasReached(eventKind, "select-evidence");
-  const queryVector = [0.86, 0.33, 0.78, 0.57];
+  const queryVector = simulation.queryVector;
 
   return (
     <section
@@ -516,10 +575,47 @@ export function RagStage({
   position,
   isComplete,
   playbackStatus,
+  phase = position.scene.id as RagPhase,
+  onEmbeddingModelOpen,
+  onVectorDbOpen,
 }: RagStageProps): React.JSX.Element {
+  const [isEmbeddingModelDialogOpen, setIsEmbeddingModelDialogOpen] =
+    useState(false);
+  const [isVectorDbOpen, setIsVectorDbOpen] = useState(false);
+  const openEmbeddingModelDialog = (): void => {
+    setIsEmbeddingModelDialogOpen(true);
+    onEmbeddingModelOpen?.();
+  };
+  const openVectorDb = (): void => {
+    setIsVectorDbOpen(true);
+    onVectorDbOpen?.();
+  };
+  const activeStage =
+    phase === "index" ? (
+      <IndexStage
+        eventKind={position.event.kind}
+        isComplete={isComplete}
+        onOpenEmbeddingModel={openEmbeddingModelDialog}
+        onOpenVectorDb={openVectorDb}
+        simulation={simulation}
+      />
+    ) : phase === "retrieve" ? (
+      <RetrieveStage
+        eventKind={position.event.kind}
+        isComplete={isComplete}
+        simulation={simulation}
+      />
+    ) : (
+      <GenerateStage
+        eventKind={position.event.kind}
+        isComplete={isComplete}
+        simulation={simulation}
+      />
+    );
+
   return (
     <div
-      className={`rag-stage rag-stage--${position.scene.id}`}
+      className={`rag-stage rag-stage--${phase}`}
       data-event={position.event.kind}
       data-playback={playbackStatus}
     >
@@ -529,27 +625,23 @@ export function RagStage({
           <strong>{position.scene.title}</strong>
         </div>
         <span>
-          Event {position.eventNumber} / {position.totalEvents}
+          Step {position.eventNumber} / {position.totalEvents}
         </span>
       </div>
 
-      <div className="rag-stage__canvas rag-pipeline">
-        <IndexStage
-          eventKind={position.event.kind}
-          isComplete={isComplete}
-          simulation={simulation}
+      <div className="rag-stage__canvas rag-pipeline">{activeStage}</div>
+      {phase === "index" && (
+        <EmbeddingModelDialog
+          embedding={simulation.embedding}
+          isOpen={isEmbeddingModelDialogOpen}
+          onClose={() => setIsEmbeddingModelDialogOpen(false)}
         />
-        <RetrieveStage
-          eventKind={position.event.kind}
-          isComplete={isComplete}
-          simulation={simulation}
-        />
-        <GenerateStage
-          eventKind={position.event.kind}
-          isComplete={isComplete}
-          simulation={simulation}
-        />
-      </div>
+      )}
+      <VectorDbDialog
+        isOpen={phase === "index" && isVectorDbOpen}
+        onClose={() => setIsVectorDbOpen(false)}
+        simulation={simulation}
+      />
     </div>
   );
 }

@@ -55,7 +55,7 @@ export function App(): React.JSX.Element {
   if (currentDemo) {
     const CurrentDemo = currentDemo.component;
     return (
-      <div className="app-shell">
+      <div className="app-shell app-shell--demo">
         <header className="site-header">
           <SiteBrand />
           <InternalLink className="header-link" href="/">

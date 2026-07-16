@@ -94,4 +94,17 @@ describe("App navigation", () => {
       }),
     ).toBeInTheDocument();
   });
+
+  it("uses the wider application shell only for walkthrough routes", () => {
+    setLocation("/demos/rag");
+    const { container, unmount } = render(<App />);
+
+    expect(container.querySelector(".app-shell--demo")).toBeInTheDocument();
+
+    unmount();
+    setLocation("/");
+    const catalog = render(<App />);
+
+    expect(catalog.container.querySelector(".app-shell--demo")).not.toBeInTheDocument();
+  });
 });

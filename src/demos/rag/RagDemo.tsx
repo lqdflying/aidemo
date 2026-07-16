@@ -142,7 +142,7 @@ export function RagDemo(): React.JSX.Element {
   };
 
   return (
-    <main className="walkthrough-demo">
+    <main className="walkthrough-demo rag-demo">
       <section className="walkthrough-hero">
         <div>
           <InternalLink className="back-link" href="/">

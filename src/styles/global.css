@@ -88,6 +88,10 @@ input:focus-visible {
   margin: 0 auto;
 }
 
+.app-shell--demo {
+  width: min(100% - 40px, 1440px);
+}
+
 .site-header {
   display: flex;
   align-items: center;

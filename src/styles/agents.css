@@ -2240,3 +2240,91 @@
     animation: none !important;
   }
 }
+
+/* Preserve the complete architecture while giving desktop screens a wide map. */
+@media (min-width: 1081px) {
+  .agent-stage__canvas {
+    min-height: 0;
+    padding: 14px;
+  }
+
+  .agent-map__trace {
+    grid-template-columns: 42px minmax(145px, 0.72fr) minmax(160px, 0.72fr) minmax(260px, 1.56fr);
+    min-height: 58px;
+    gap: 10px;
+    padding: 8px 12px;
+  }
+
+  .agent-map__trace > span {
+    width: 38px;
+    height: 38px;
+  }
+
+  .agent-attempts {
+    padding: 8px 12px;
+  }
+
+  .agent-harness {
+    display: grid;
+    grid-template-columns: 360px minmax(0, 1fr);
+    margin: 10px;
+  }
+
+  .agent-harness__header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-content: center;
+    gap: 5px 8px;
+    padding: 6px 10px;
+  }
+
+  .agent-harness__facets {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .agent-harness__facets span {
+    min-height: 28px;
+    padding-block: 4px;
+  }
+
+  .agent-harness__header > button {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .agent-loop {
+    grid-template-columns: minmax(170px, 0.72fr) minmax(280px, 1.58fr) minmax(120px, 0.7fr);
+    gap: 10px;
+    padding: 8px 12px;
+  }
+
+  .agent-loop > header {
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+  }
+
+  .agent-loop > header > button {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    min-height: 44px;
+    justify-self: start;
+  }
+
+  .agent-map__desktop {
+    grid-column: 1 / -1;
+    aspect-ratio: 1200 / 450;
+    min-height: 0;
+  }
+
+  .agent-map__mobile {
+    grid-column: 1 / -1;
+  }
+
+  .agent-remediation {
+    margin-top: 10px;
+  }
+
+  .agent-remediation__plan,
+  .agent-remediation__gate {
+    padding: 14px;
+  }
+}

@@ -62,40 +62,40 @@ interface ZoneBox {
   readonly height: number;
 }
 
-const mapWidth = 1000;
-const mapHeight = 720;
+const mapWidth = 1200;
+const mapHeight = 450;
 
 const nodePositions: Readonly<Record<ArchitectureNodeId, Point>> = {
-  "incident-channel": { x: 90, y: 145 },
-  "input-gateway": { x: 245, y: 115 },
-  orchestrator: { x: 345, y: 220 },
-  "session-context": { x: 515, y: 105 },
-  "global-memory": { x: 690, y: 105 },
-  "skills-library": { x: 515, y: 220 },
-  "context-compactor": { x: 690, y: 220 },
-  "remote-llm": { x: 900, y: 105 },
-  "local-llm": { x: 900, y: 220 },
-  "metrics-agent": { x: 100, y: 420 },
-  "logs-agent": { x: 255, y: 420 },
-  "runbook-agent": { x: 410, y: 420 },
-  "remediation-agent": { x: 565, y: 420 },
-  "metrics-mcp": { x: 710, y: 385 },
-  "logs-mcp": { x: 875, y: 385 },
-  "knowledge-rag": { x: 710, y: 500 },
-  "cloud-control-mcp": { x: 875, y: 500 },
-  "output-hooks": { x: 285, y: 635 },
-  "human-approver": { x: 510, y: 635 },
-  "verified-outcome": { x: 750, y: 635 },
+  "incident-channel": { x: 108, y: 91 },
+  "input-gateway": { x: 294, y: 72 },
+  orchestrator: { x: 414, y: 142 },
+  "session-context": { x: 618, y: 66 },
+  "global-memory": { x: 828, y: 66 },
+  "skills-library": { x: 618, y: 137 },
+  "context-compactor": { x: 828, y: 137 },
+  "remote-llm": { x: 1080, y: 66 },
+  "local-llm": { x: 1080, y: 137 },
+  "metrics-agent": { x: 120, y: 263 },
+  "logs-agent": { x: 306, y: 263 },
+  "runbook-agent": { x: 492, y: 263 },
+  "remediation-agent": { x: 678, y: 263 },
+  "metrics-mcp": { x: 852, y: 241 },
+  "logs-mcp": { x: 1050, y: 241 },
+  "knowledge-rag": { x: 852, y: 313 },
+  "cloud-control-mcp": { x: 1050, y: 313 },
+  "output-hooks": { x: 342, y: 397 },
+  "human-approver": { x: 612, y: 397 },
+  "verified-outcome": { x: 900, y: 397 },
 };
 
 const zoneBoxes: Readonly<Record<ArchitectureZone, ZoneBox>> = {
-  entry: { x: 20, y: 35, width: 140, height: 250 },
-  runtime: { x: 180, y: 35, width: 240, height: 250 },
-  context: { x: 440, y: 35, width: 360, height: 250 },
-  models: { x: 820, y: 35, width: 160, height: 250 },
-  agents: { x: 20, y: 315, width: 600, height: 230 },
-  tools: { x: 640, y: 315, width: 340, height: 230 },
-  governance: { x: 20, y: 570, width: 960, height: 125 },
+  entry: { x: 24, y: 22, width: 168, height: 156 },
+  runtime: { x: 216, y: 22, width: 288, height: 156 },
+  context: { x: 528, y: 22, width: 432, height: 156 },
+  models: { x: 984, y: 22, width: 192, height: 156 },
+  agents: { x: 24, y: 197, width: 720, height: 144 },
+  tools: { x: 768, y: 197, width: 408, height: 144 },
+  governance: { x: 24, y: 356, width: 1152, height: 78 },
 };
 
 function getNodeState(node: ArchitectureNode, traceStep: AgentTraceStep): MapState {

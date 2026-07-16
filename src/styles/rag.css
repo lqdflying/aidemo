@@ -4284,3 +4284,207 @@
     transition: none;
   }
 }
+
+/* Landscape-first walkthrough layout for laptop and desktop screens. */
+@media (min-width: 1081px) {
+  .walkthrough-demo {
+    padding: 24px 0 72px;
+  }
+
+  .walkthrough-hero {
+    grid-template-columns: minmax(0, 1.55fr) minmax(300px, 0.65fr);
+    gap: 40px;
+    padding: 8px 0 30px;
+  }
+
+  .walkthrough-hero__title {
+    margin-top: 28px;
+  }
+
+  .walkthrough-hero h1 {
+    max-width: 940px;
+    margin-top: 12px;
+    font-size: clamp(42px, 4.2vw, 60px);
+    line-height: 0.98;
+  }
+
+  .walkthrough-hero__summary {
+    padding-bottom: 2px;
+  }
+
+  .walkthrough-hero__summary > div {
+    margin-bottom: 14px;
+  }
+
+  .walkthrough-timeline {
+    padding: 7px 22px 6px;
+  }
+
+  .timeline-step {
+    min-height: 44px;
+  }
+
+  .walkthrough-workspace__main {
+    grid-template-columns: minmax(0, 1fr) 280px;
+    min-height: 0;
+  }
+
+  .rag-stage__canvas {
+    min-height: 0;
+    padding: 18px;
+  }
+
+  .rag-stage__topline,
+  .agent-stage__topline {
+    min-height: 56px;
+    padding: 10px 18px;
+  }
+
+  .stage-layout {
+    min-height: 0;
+  }
+
+  .rag-demo .pipeline-lane {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    padding: 16px;
+  }
+
+  .rag-demo .pipeline-lane__heading {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    align-items: baseline;
+    gap: 10px;
+    padding: 0 2px 12px;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .rag-demo .pipeline-lane__heading span,
+  .rag-demo .pipeline-lane__heading strong,
+  .rag-demo .pipeline-lane__heading small {
+    margin: 0;
+  }
+
+  .rag-demo .pipeline-lane__heading small {
+    justify-self: end;
+    text-align: right;
+  }
+
+  .rag-demo .pipeline-lane .stage-layout--index {
+    grid-template-columns:
+      minmax(210px, 0.9fr) 24px
+      minmax(390px, 1.75fr) 24px
+      minmax(200px, 0.9fr);
+  }
+
+  .rag-demo .chunk-cloud {
+    grid-template-columns: repeat(3, minmax(118px, 1fr));
+    gap: 7px;
+  }
+
+  .rag-demo .source-document,
+  .rag-demo .chunk-chip {
+    padding: 10px;
+  }
+
+  .rag-demo .embedding-model,
+  .rag-demo .stage-layout--index > .vector-store {
+    padding: 15px;
+  }
+
+  .rag-demo .stage-layout--retrieve {
+    grid-template-columns: minmax(300px, 0.82fr) 72px minmax(460px, 1.18fr);
+  }
+
+  .rag-demo .stage-layout--generate {
+    grid-template-columns: minmax(410px, 0.95fr) 58px minmax(430px, 1.05fr);
+  }
+
+  .question-bar {
+    grid-template-columns: minmax(220px, 0.55fr) minmax(0, 1.45fr);
+    gap: 14px 32px;
+    padding: 16px 22px;
+  }
+
+  .question-bar__heading {
+    align-self: center;
+  }
+
+  .question-bar__heading h2 {
+    margin-top: 5px;
+  }
+
+  .question-bar__heading p {
+    margin-top: 5px;
+  }
+
+  .question-bar .question-suggestions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: 8px;
+  }
+
+  .question-bar .question-suggestions button {
+    width: 100%;
+  }
+
+  .walkthrough-explanation {
+    padding: 22px 20px 18px;
+  }
+
+  .walkthrough-explanation h2 {
+    margin: 18px 0 10px;
+    font-size: 26px;
+  }
+
+  .walkthrough-explanation__footer {
+    padding-top: 20px;
+  }
+
+  .walkthrough-controls {
+    min-height: 70px;
+    gap: 14px;
+    padding: 10px 16px;
+  }
+}
+
+@media (min-width: 1081px) and (max-height: 900px) {
+  .walkthrough-demo {
+    padding-top: 18px;
+  }
+
+  .walkthrough-hero {
+    padding-top: 4px;
+    padding-bottom: 22px;
+  }
+
+  .walkthrough-hero__title {
+    margin-top: 20px;
+  }
+
+  .walkthrough-hero h1 {
+    font-size: clamp(40px, 3.9vw, 54px);
+  }
+}
+
+@media (min-width: 1081px) and (max-width: 1200px) {
+  .walkthrough-workspace__main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rag-stage,
+  .agent-stage {
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .walkthrough-explanation {
+    min-height: 170px;
+  }
+
+  .walkthrough-explanation__footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+  }
+}

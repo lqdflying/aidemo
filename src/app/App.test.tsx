@@ -83,14 +83,14 @@ describe("App navigation", () => {
 
     fireEvent.click(
       screen.getByRole("link", {
-        name: "Start How AI agents work walkthrough",
+        name: "Start How AI agents work(designing) walkthrough",
       }),
     );
 
     expect(window.location.pathname).toBe("/demos/agent-orchestration");
     expect(
       screen.getByRole("heading", {
-        name: "See the complete AI agent system at work.",
+        name: "How AI agents work(designing)",
       }),
     ).toBeInTheDocument();
   });
@@ -106,5 +106,12 @@ describe("App navigation", () => {
     const catalog = render(<App />);
 
     expect(catalog.container.querySelector(".app-shell--demo")).not.toBeInTheDocument();
+  });
+
+  it("gives the agent architecture its wider diagram shell", () => {
+    setLocation("/demos/agent-orchestration/execute");
+    const { container } = render(<App />);
+
+    expect(container.querySelector(".app-shell--agents")).toBeInTheDocument();
   });
 });

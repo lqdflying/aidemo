@@ -1,546 +1,769 @@
 import {
-  CheckCircle2,
-  CircleX,
+  ArrowRight,
+  Boxes,
+  ClockAlert,
   GitBranch,
   Info,
-  LoaderCircle,
-  LockKeyhole,
+  Network,
+  RefreshCw,
+  Repeat2,
   RotateCcw,
   ShieldCheck,
-  Workflow,
 } from "lucide-react";
+import type { CSSProperties } from "react";
 
 import { AgentNodeIcon } from "./AgentNodeIcon";
 import {
-  agentLoopPassLabels,
-  architectureZoneLearning,
-  architectureZones,
+  buildAgentFlowLegViews,
+  getActiveGroupIds,
+  getAgentDetailTargetKey,
+  getAgentGroup,
+  getTopologyDescription,
+  type AgentFlowLegView,
+} from "./agent-diagram-model";
+import {
+  agentGroupOrder,
+  agentLessonStateLabels,
 } from "./agent-knowledge";
-import { agentPhases, type AgentPhase } from "./agent-routing";
 import type {
+  AgentAttemptStatus,
+  AgentArchitectureModel,
+  AgentComponentGroup,
+  AgentContractDirection,
   AgentDetailTarget,
-  AgentHarnessFacet,
-  AgentSimulation,
-  AgentTraceStep,
-  ArchitectureNode,
-  ArchitectureNodeId,
-  ArchitectureZone,
+  AgentLessonStep,
+  AgentRelationshipId,
+  AgentTopologyKind,
 } from "./agent-types";
 
 interface AgentArchitectureMapProps {
-  readonly phase: AgentPhase;
-  readonly simulation: AgentSimulation;
-  readonly traceStep: AgentTraceStep;
-  readonly onOpenDetail: (target: AgentDetailTarget) => void;
+  readonly model: AgentArchitectureModel;
+  readonly onSelectTarget: (
+    target: AgentDetailTarget,
+    trigger: HTMLButtonElement,
+  ) => void;
+  readonly selectedTarget: AgentDetailTarget | null;
+  readonly step: AgentLessonStep;
 }
 
-type MapState =
-  | "pending"
-  | "active"
-  | "complete"
-  | "failed"
-  | "retry"
-  | "recovered";
-type AttemptStatus = "pending" | "running" | "failed" | "succeeded";
-
-interface RecoveryAttempt {
-  readonly id: "attempt-1" | "attempt-2";
-  readonly label: string;
-  readonly status: AttemptStatus;
-  readonly statusLabel: string;
+interface RelationshipRoute {
+  readonly path: string;
+  readonly labelX: number;
+  readonly labelY: number;
+  readonly lane: "diagram" | "forward" | "return" | "outer";
 }
 
-interface Point {
-  readonly x: number;
-  readonly y: number;
+interface RelationshipPath {
+  readonly forward: RelationshipRoute;
+  readonly return?: RelationshipRoute;
 }
 
-interface ZoneBox {
-  readonly x: number;
-  readonly y: number;
-  readonly width: number;
-  readonly height: number;
-}
-
-const mapWidth = 1200;
-const mapHeight = 450;
-
-const nodePositions: Readonly<Record<ArchitectureNodeId, Point>> = {
-  "incident-channel": { x: 108, y: 91 },
-  "input-gateway": { x: 294, y: 72 },
-  orchestrator: { x: 414, y: 142 },
-  "session-context": { x: 618, y: 66 },
-  "global-memory": { x: 828, y: 66 },
-  "skills-library": { x: 618, y: 137 },
-  "context-compactor": { x: 828, y: 137 },
-  "remote-llm": { x: 1080, y: 66 },
-  "local-llm": { x: 1080, y: 137 },
-  "metrics-agent": { x: 120, y: 263 },
-  "logs-agent": { x: 306, y: 263 },
-  "runbook-agent": { x: 492, y: 263 },
-  "remediation-agent": { x: 678, y: 263 },
-  "metrics-mcp": { x: 852, y: 241 },
-  "logs-mcp": { x: 1050, y: 241 },
-  "knowledge-rag": { x: 852, y: 313 },
-  "cloud-control-mcp": { x: 1050, y: 313 },
-  "output-hooks": { x: 342, y: 397 },
-  "human-approver": { x: 612, y: 397 },
-  "verified-outcome": { x: 900, y: 397 },
+const relationshipPaths: Readonly<Record<AgentRelationshipId, RelationshipPath>> = {
+  "entry-to-runtime": {
+    forward: {
+      path: "M 100 529 C 100 543 138 556 176 556 L 224 556 C 262 556 300 543 300 529",
+      labelX: 200,
+      labelY: 548,
+      lane: "forward",
+    },
+  },
+  "runtime-to-context": {
+    forward: {
+      path: "M 276 317 L 276 262",
+      labelX: 246,
+      labelY: 281,
+      lane: "diagram",
+    },
+    return: {
+      path: "M 324 262 L 324 317",
+      labelX: 354,
+      labelY: 306,
+      lane: "diagram",
+    },
+  },
+  "runtime-to-models": {
+    forward: {
+      path: "M 350 317 C 372 292 414 273 455 262",
+      labelX: 400,
+      labelY: 278,
+      lane: "diagram",
+    },
+    return: {
+      path: "M 535 262 C 502 291 436 309 330 317",
+      labelX: 466,
+      labelY: 309,
+      lane: "diagram",
+    },
+  },
+  "runtime-to-agents": {
+    forward: {
+      path: "M 300 529 C 300 543 338 556 376 556 L 424 556 C 462 556 500 543 500 529",
+      labelX: 400,
+      labelY: 548,
+      lane: "forward",
+    },
+    return: {
+      path: "M 500 529 C 500 563 462 592 424 592 L 376 592 C 338 592 300 563 300 529",
+      labelX: 400,
+      labelY: 610,
+      lane: "return",
+    },
+  },
+  "agents-to-tools": {
+    forward: {
+      path: "M 500 529 C 500 543 538 556 576 556 L 624 556 C 662 556 700 543 700 529",
+      labelX: 600,
+      labelY: 548,
+      lane: "forward",
+    },
+    return: {
+      path: "M 700 529 C 700 563 662 592 624 592 L 576 592 C 538 592 500 563 500 529",
+      labelX: 600,
+      labelY: 610,
+      lane: "return",
+    },
+  },
+  "agents-to-governance": {
+    forward: {
+      path: "M 586 348 C 598 326 602 284 614 252",
+      labelX: 600,
+      labelY: 288,
+      lane: "diagram",
+    },
+  },
+  "governance-to-runtime": {
+    forward: {
+      path: "M 700 50 C 700 42 690 40 680 40 L 220 40 C 208 40 200 48 200 60 L 200 348 C 200 356 206 360 214 360",
+      labelX: 450,
+      labelY: 36,
+      lane: "outer",
+    },
+  },
+  "governance-to-tools": {
+    forward: {
+      path: "M 692 262 L 692 317",
+      labelX: 700,
+      labelY: 284,
+      lane: "diagram",
+    },
+  },
+  "governance-to-outcome": {
+    forward: {
+      path: "M 786 252 C 798 284 802 326 814 348",
+      labelX: 800,
+      labelY: 288,
+      lane: "diagram",
+    },
+  },
+  "tools-to-outcome": {
+    forward: {
+      path: "M 700 529 C 700 543 738 556 776 556 L 824 556 C 862 556 900 543 900 529",
+      labelX: 800,
+      labelY: 548,
+      lane: "forward",
+    },
+  },
+  "outcome-to-context": {
+    forward: {
+      path: "M 900 317 C 954 306 986 266 986 210 L 986 76 C 986 52 970 40 944 40 L 340 40 C 320 40 300 44 300 50",
+      labelX: 825,
+      labelY: 36,
+      lane: "outer",
+    },
+  },
+  "outcome-to-entry": {
+    forward: {
+      path: "M 900 529 C 900 580 796 616 730 616 L 270 616 C 204 616 100 580 100 529",
+      labelX: 800,
+      labelY: 608,
+      lane: "outer",
+    },
+  },
 };
 
-const zoneBoxes: Readonly<Record<ArchitectureZone, ZoneBox>> = {
-  entry: { x: 24, y: 22, width: 168, height: 156 },
-  runtime: { x: 216, y: 22, width: 288, height: 156 },
-  context: { x: 528, y: 22, width: 432, height: 156 },
-  models: { x: 984, y: 22, width: 192, height: 156 },
-  agents: { x: 24, y: 197, width: 720, height: 144 },
-  tools: { x: 768, y: 197, width: 408, height: 144 },
-  governance: { x: 24, y: 356, width: 1152, height: 78 },
+const topologyIcons: Readonly<
+  Record<AgentTopologyKind, typeof Boxes>
+> = {
+  system: Boxes,
+  sequence: ArrowRight,
+  "pair-loop": Repeat2,
+  star: Network,
+  cycle: RefreshCw,
+  retry: RotateCcw,
+  "fan-out": GitBranch,
 };
 
-function getNodeState(node: ArchitectureNode, traceStep: AgentTraceStep): MapState {
-  if (traceStep.nodeIds.includes(node.id)) return traceStep.state ?? "active";
-  return node.firstTraceStep < traceStep.number ? "complete" : "pending";
-}
+function ArchitectureConnectors({
+  model,
+  step,
+}: Pick<AgentArchitectureMapProps, "model" | "step">): React.JSX.Element {
+  const flowLegs = buildAgentFlowLegViews(model, step);
 
-function getEdgeState(
-  edgeId: string,
-  firstTraceStep: number,
-  traceStep: AgentTraceStep,
-): MapState {
-  if (traceStep.edgeIds.includes(edgeId)) return traceStep.state ?? "active";
-  return firstTraceStep < traceStep.number ? "complete" : "pending";
-}
-
-function getActiveEdgeLabel(
-  edgeId: string,
-  defaultLabel: string,
-  state: MapState,
-): string {
-  if (edgeId !== "logs-agent-to-mcp") return defaultLabel;
-  if (state === "failed") return "timeout · no result";
-  if (state === "retry") return "attempt 2 · running";
-  if (state === "recovered") return "attempt 2 · evidence returned";
-  if (state === "active") return "attempt 1 · running";
-  return defaultLabel;
-}
-
-function getHarnessFacetState(
-  facet: AgentHarnessFacet,
-  traceStep: AgentTraceStep,
-): "quiet" | "active" | "failed" | "retry" | "recovered" {
-  const isActive = facet.nodeIds.some((nodeId) => traceStep.nodeIds.includes(nodeId));
-  if (!isActive) return "quiet";
-  return traceStep.state ?? "active";
-}
-
-function getRecoveryAttempts(traceStep: AgentTraceStep): readonly RecoveryAttempt[] {
-  const attemptOneStatus: AttemptStatus = traceStep.eventKind === "run-broad-log-query"
-    ? "running"
-    : "failed";
-  const attemptTwoStatus: AttemptStatus = [
-    "complete-log-retry",
-    "reconcile-evidence",
-    "evaluate-output",
-  ].includes(traceStep.eventKind)
-    ? "succeeded"
-    : traceStep.eventKind === "retry-narrow-query"
-      ? "running"
-      : "pending";
-
-  return [
-    {
-      id: "attempt-1",
-      label: "Attempt 1",
-      status: attemptOneStatus,
-      statusLabel: attemptOneStatus === "running"
-        ? "Running broad query"
-        : "Failed · timeout",
-    },
-    {
-      id: "attempt-2",
-      label: "Attempt 2",
-      status: attemptTwoStatus,
-      statusLabel: attemptTwoStatus === "running"
-        ? "Running narrow query"
-        : attemptTwoStatus === "succeeded"
-          ? "Succeeded · evidence returned"
-          : "Waiting for re-plan",
-    },
-  ];
-}
-
-function RecoveryAttemptLedger({
-  traceStep,
-}: {
-  readonly traceStep: AgentTraceStep;
-}): React.JSX.Element {
-  const attempts = getRecoveryAttempts(traceStep);
-
-  return (
-    <section
-      aria-atomic="true"
-      aria-label="Recovery attempt history"
-      aria-live="polite"
-      className="agent-attempts"
-    >
-      <div>
-        <small>Recovery attempts</small>
-        <strong>Failure and retry stay separate</strong>
-      </div>
-      <ol>
-        {attempts.map((attempt) => (
-          <li data-state={attempt.status} key={attempt.id}>
-            {attempt.status === "failed" ? (
-              <CircleX aria-hidden="true" />
-            ) : attempt.status === "succeeded" ? (
-              <CheckCircle2 aria-hidden="true" />
-            ) : (
-              <LoaderCircle aria-hidden="true" />
-            )}
-            <span><small>{attempt.label}</small><strong>{attempt.statusLabel}</strong></span>
-          </li>
-        ))}
-      </ol>
-    </section>
+  const getFlowLeg = (
+    relationshipId: AgentRelationshipId,
+    direction: AgentContractDirection,
+  ): AgentFlowLegView | undefined => flowLegs.find(
+    (leg) => leg.relationship.id === relationshipId && leg.direction === direction,
   );
-}
 
-function HarnessHeader({
-  simulation,
-  traceStep,
-  onOpenDetail,
-}: Omit<AgentArchitectureMapProps, "phase">): React.JSX.Element {
-  return (
-    <header className="agent-harness__header">
-      <div className="agent-harness__identity">
-        <span aria-hidden="true"><ShieldCheck /></span>
-        <div>
-          <small>Engineered environment</small>
-          <strong>Harness Engineering</strong>
-          <p>Intent, context, tools, authority, and evaluation around the model.</p>
-        </div>
-      </div>
-      <div className="agent-harness__facets" aria-label="Harness engineering controls">
-        {simulation.harnessFacets.map((facet) => (
-          <span data-state={getHarnessFacetState(facet, traceStep)} key={facet.id}>
-            {facet.label}
-          </span>
-        ))}
-      </div>
-      <button
-        aria-haspopup="dialog"
-        aria-label="Learn about Harness Engineering"
-        onClick={() => onOpenDetail({ kind: "concept", concept: "harness" })}
-        type="button"
+  const renderPath = (
+    relationshipId: AgentRelationshipId,
+    direction: AgentContractDirection,
+    route: RelationshipRoute,
+  ): React.JSX.Element => {
+    const flowLeg = getFlowLeg(relationshipId, direction);
+    const state = flowLeg?.state ?? "quiet";
+    const markerTone = flowLeg?.state === "active" ? flowLeg.tone : state;
+    const suppressPacket = step.topology === "star"
+      && relationshipId === "runtime-to-agents";
+    const phaseStyle = flowLeg?.schedule === "system-overview"
+      ? { "--agent-flow-delay": `${1000 + (flowLeg.phaseIndex * 900)}ms` } as CSSProperties
+      : undefined;
+
+    return (
+      <g
+        data-flow-direction={direction}
+        data-flow-lane={route.lane}
+        data-flow-phase={flowLeg?.phaseIndex}
+        data-flow-schedule={flowLeg?.schedule}
+        data-flow-tone={flowLeg?.tone}
+        data-state={state}
+        key={`${relationshipId}:${direction}`}
+        style={phaseStyle}
       >
-        <Info aria-hidden="true" />Explain harness
-      </button>
-    </header>
-  );
-}
-
-function LoopRail({
-  simulation,
-  traceStep,
-  onOpenDetail,
-}: Omit<AgentArchitectureMapProps, "phase">): React.JSX.Element {
-  const traceState = traceStep.state ?? "progress";
-  const status = traceStep.eventKind === "run-broad-log-query"
-    ? "Attempt 1 · broad call running"
-    : traceStep.state === "failed"
-    ? "Attempt 1 ended · no result advanced"
-    : traceStep.state === "retry"
-      ? "Attempt 2 · separate bounded call running"
-      : traceStep.state === "recovered"
-        ? "Attempt 2 succeeded · evidence returned"
-        : traceStep.label;
+        <path
+          className="agent-connectors__path"
+          d={route.path}
+          data-active={Boolean(flowLeg)}
+          data-direction={direction}
+          data-flow-lane={route.lane}
+          data-flow-tone={flowLeg?.tone}
+          data-state={state}
+          markerEnd={`url(#agent-arrow-${flowLeg ? markerTone : "quiet"})`}
+        />
+        {flowLeg && !suppressPacket && (
+          <FlowPacketPaths pathData={route.path} flowLeg={flowLeg} />
+        )}
+        {flowLeg && (
+          <text
+            className="agent-connectors__label"
+            data-direction={direction}
+            data-flow-lane={route.lane}
+            data-flow-phase={flowLeg.phaseIndex}
+            data-flow-schedule={flowLeg.schedule}
+            data-flow-tone={flowLeg.tone}
+            data-state={flowLeg.state}
+            textAnchor="middle"
+            x={route.labelX}
+            y={route.labelY}
+          >
+            {flowLeg.label}
+          </text>
+        )}
+      </g>
+    );
+  };
 
   return (
-    <section
-      aria-label={`Loop Engineering, ${agentLoopPassLabels[traceStep.loopPass]}, ${traceStep.loopStage}`}
-      className="agent-loop"
-      data-state={traceState}
+    <svg
+      aria-hidden="true"
+      className="agent-connectors"
+      data-flow-schedule={flowLegs[0]?.schedule ?? "lesson"}
+      preserveAspectRatio="none"
+      viewBox="0 0 1000 620"
     >
-      <header>
-        <span aria-hidden="true"><Workflow /></span>
-        <div>
-          <small>Run protocol · {agentLoopPassLabels[traceStep.loopPass]}</small>
-          <strong>Loop Engineering</strong>
-        </div>
-        <button
-          aria-haspopup="dialog"
-          aria-label="Learn about Loop Engineering"
-          onClick={() => onOpenDetail({ kind: "concept", concept: "loop" })}
-          type="button"
-        >
-          <Info aria-hidden="true" />Explain loop
-        </button>
-      </header>
-      <ol>
-        {simulation.loopPolicy.stages.map((stage) => (
-          <li
-            aria-current={stage.id === traceStep.loopStage ? "step" : undefined}
-            data-state={stage.id === traceStep.loopStage ? traceState : "quiet"}
-            key={stage.id}
-          >
-            <i aria-hidden="true" />
-            <span>{stage.label}</span>
-          </li>
-        ))}
-      </ol>
-      <p aria-live="polite">{status}</p>
-    </section>
-  );
-}
-
-function DesktopArchitectureMap({
-  simulation,
-  traceStep,
-  onOpenDetail,
-}: Omit<AgentArchitectureMapProps, "phase">): React.JSX.Element {
-  return (
-    <div className="agent-map__desktop">
-      {architectureZones.map((zone) => {
-        const box = zoneBoxes[zone];
+      <defs>
+        {(["quiet", "request", "response", "failed", "retry", "recovered"] as const).map(
+          (tone) => (
+            <marker
+              id={`agent-arrow-${tone}`}
+              key={tone}
+              markerHeight="6"
+              markerUnits="userSpaceOnUse"
+              markerWidth="7"
+              orient="auto"
+              refX="6.5"
+              refY="3"
+              viewBox="0 0 7 6"
+            >
+              <path d="M 0 0 L 7 3 L 0 6 z" />
+            </marker>
+          ),
+        )}
+      </defs>
+      {model.relationships.map((relationship) => {
+        const path = relationshipPaths[relationship.id];
         return (
-        <div
-          className="agent-map__zone"
-          data-zone={zone}
-          key={zone}
-          style={{
-            height: `${(box.height / mapHeight) * 100}%`,
-            left: `${(box.x / mapWidth) * 100}%`,
-            top: `${(box.y / mapHeight) * 100}%`,
-            width: `${(box.width / mapWidth) * 100}%`,
-          }}
-        >
-          <button
-            aria-haspopup="dialog"
-            aria-label={`Learn about ${architectureZoneLearning[zone].label}`}
-            className="agent-map__zone-trigger"
-            onClick={() => onOpenDetail({ kind: "zone", zone })}
-            type="button"
+          <g
+            data-active={flowLegs.some(
+              (leg) => leg.relationship.id === relationship.id,
+            )}
+            data-relationship-id={relationship.id}
+            key={relationship.id}
           >
-            <span>{architectureZoneLearning[zone].label}</span><Info aria-hidden="true" />
-          </button>
-        </div>
+            {renderPath(
+              relationship.id,
+              "forward",
+              path.forward,
+            )}
+            {path.return && renderPath(
+              relationship.id,
+              "return",
+              path.return,
+            )}
+          </g>
         );
       })}
+      {step.eventKind === "record-tool-failure" && (
+        <g
+          className="agent-timeout-marker"
+          data-timeout-endpoint="tools"
+          transform="translate(700 544)"
+        >
+          <circle r="14" />
+          <ClockAlert aria-hidden="true" height="18" width="18" x="-9" y="-9" />
+        </g>
+      )}
+    </svg>
+  );
+}
 
-      <svg aria-hidden="true" className="agent-map__edges" viewBox={`0 0 ${mapWidth} ${mapHeight}`}>
-        <defs>
-          <marker id="agent-map-arrow" markerHeight="8" markerWidth="8" orient="auto-start-reverse" refX="7" refY="4">
-            <path d="M 0 0 L 8 4 L 0 8 z" />
+function FlowPacketPaths({
+  flowLeg,
+  pathData,
+}: {
+  readonly flowLeg: AgentFlowLegView;
+  readonly pathData: string;
+}): React.JSX.Element {
+  return (
+    <g
+      data-direction={flowLeg.direction}
+      data-flow-id={flowLeg.id}
+      data-flow-phase={flowLeg.phaseIndex}
+      data-flow-phases={flowLeg.phaseCount}
+      data-flow-schedule={flowLeg.schedule}
+      data-flow-tone={flowLeg.tone}
+      data-state={flowLeg.state}
+      key={`${flowLeg.id}:${flowLeg.phaseIndex}`}
+    >
+      <path
+        className="agent-flow-packet agent-flow-packet--trail"
+        d={pathData}
+        pathLength="100"
+      />
+      <path
+        className="agent-flow-packet agent-flow-packet--head"
+        d={pathData}
+        pathLength="100"
+      />
+    </g>
+  );
+}
+
+function WorkerStarOverlay({
+  model,
+  step,
+}: Pick<AgentArchitectureMapProps, "model" | "step">): React.JSX.Element | null {
+  if (step.topology !== "star") return null;
+  const starLegs = buildAgentFlowLegViews(model, step).filter(
+    (leg) => leg.relationship.id === "runtime-to-agents",
+  );
+  const forwardLeg = starLegs.find((leg) => leg.direction === "forward");
+  const returnLeg = starLegs.find((leg) => leg.direction === "return");
+  const requestTrunkPath = "M 386 412 L 402 412";
+  const returnTrunkPath = "M 402 436 L 386 436";
+
+  return (
+    <svg
+      aria-hidden="true"
+      className="agent-star-overlay"
+      data-relationship-id="runtime-to-agents"
+      preserveAspectRatio="none"
+      viewBox="0 0 1000 620"
+    >
+      <defs>
+        {(["request", "response"] as const).map((tone) => (
+          <marker
+            id={`agent-star-arrow-${tone}`}
+            key={tone}
+            markerHeight="6"
+            markerUnits="userSpaceOnUse"
+            markerWidth="7"
+            orient="auto"
+            refX="6.5"
+            refY="3"
+            viewBox="0 0 7 6"
+          >
+            <path d="M 0 0 L 7 3 L 0 6 z" />
           </marker>
-          <marker id="agent-map-arrow-retry" markerHeight="8" markerWidth="8" orient="auto-start-reverse" refX="7" refY="4">
-            <path d="M 0 0 L 8 4 L 0 8 z" />
-          </marker>
-          <marker id="agent-map-arrow-recovered" markerHeight="8" markerWidth="8" orient="auto-start-reverse" refX="7" refY="4">
-            <path d="M 0 0 L 8 4 L 0 8 z" />
-          </marker>
-          <marker id="agent-map-failed" markerHeight="11" markerWidth="11" orient="auto" refX="5.5" refY="5.5">
-            <circle cx="5.5" cy="5.5" r="4.25" />
-            <path d="M 3.7 3.7 L 7.3 7.3 M 7.3 3.7 L 3.7 7.3" />
-          </marker>
-        </defs>
-        {simulation.edges.map((edge) => {
-          const source = nodePositions[edge.sourceId];
-          const target = nodePositions[edge.targetId];
-          if (!source || !target) return null;
+        ))}
+      </defs>
+      <path
+        className="agent-star-overlay__trunk"
+        data-direction="forward"
+        data-flow-tone={forwardLeg?.tone ?? "request"}
+        data-star-trunk="request"
+        d={requestTrunkPath}
+      />
+      <path
+        className="agent-star-overlay__trunk"
+        data-direction="return"
+        data-flow-tone={returnLeg?.tone ?? "response"}
+        data-star-trunk="return"
+        d={returnTrunkPath}
+        markerEnd={`url(#agent-star-arrow-${returnLeg?.tone ?? "response"})`}
+      />
+      <circle
+        cx="402"
+        cy="412"
+        data-flow-tone={forwardLeg?.tone ?? "request"}
+        data-star-junction="request"
+        r="5"
+      />
+      <circle
+        cx="402"
+        cy="436"
+        data-flow-tone={returnLeg?.tone ?? "response"}
+        data-star-junction="return"
+        r="5"
+      />
+      {[385, 424, 463].map((targetY, index) => {
+        const forwardPath = `M 402 412 C 410 412 408 ${targetY - 6} 414 ${targetY - 6}`;
+        const forwardFlowPath = `${requestTrunkPath} C 410 412 408 ${targetY - 6} 414 ${targetY - 6}`;
+        const returnPath = `M 414 ${targetY + 6} C 408 ${targetY + 6} 410 436 402 436`;
+        const returnFlowPath = `${returnPath} L 386 436`;
+        return (
+          <g data-star-spoke={index + 1} key={targetY}>
+            <path
+              className="agent-star-overlay__path"
+              data-direction="forward"
+              data-flow-tone={forwardLeg?.tone}
+              data-state={forwardLeg?.state}
+              d={forwardPath}
+              markerEnd={`url(#agent-star-arrow-${forwardLeg?.tone ?? "request"})`}
+            />
+            <path
+              className="agent-star-overlay__path"
+              data-direction="return"
+              data-flow-tone={returnLeg?.tone}
+              data-state={returnLeg?.state}
+              d={returnPath}
+            />
+            {forwardLeg && (
+              <FlowPacketPaths flowLeg={forwardLeg} pathData={forwardFlowPath} />
+            )}
+            {returnLeg && (
+              <FlowPacketPaths flowLeg={returnLeg} pathData={returnFlowPath} />
+            )}
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
 
-          const state = getEdgeState(edge.id, edge.firstTraceStep, traceStep);
-          const activeLabel = getActiveEdgeLabel(edge.id, edge.label, state);
-          const midpointX = (source.x + target.x) / 2;
-          const midpointY = (source.y + target.y) / 2 - 7;
-          const markerEnd = state === "failed"
-            ? "url(#agent-map-failed)"
-            : state === "retry"
-              ? "url(#agent-map-arrow-retry)"
-              : state === "recovered"
-                ? "url(#agent-map-arrow-recovered)"
-              : "url(#agent-map-arrow)";
+function MobileActiveContracts({
+  model,
+  step,
+}: Pick<AgentArchitectureMapProps, "model" | "step">): React.JSX.Element {
+  if (step.topology === "system") {
+    const isGroupTour = step.eventKind === "map-components";
+    return (
+      <div
+        aria-live="polite"
+        className="agent-mobile-contracts agent-mobile-contracts--system"
+        data-system-tour={isGroupTour ? "groups" : "loop"}
+      >
+        <span>{isGroupTour ? "System group tour" : "Illustrative system loop"}</span>
+        <div
+          aria-label={isGroupTour
+            ? "Scanning the eight agent system groups"
+            : "Tracing a representative agent request and return loop"}
+          className="agent-mobile-system-tour"
+          role="img"
+        >
+          {agentGroupOrder.map((groupId, index) => (
+            <span
+              data-tour-order={index}
+              key={groupId}
+              style={{ "--agent-tour-delay": `${index * 900}ms` } as CSSProperties}
+            >
+              {getAgentGroup(model, groupId).shortLabel}
+            </span>
+          ))}
+        </div>
+        <p>
+          {isGroupTour
+            ? "The highlight keeps moving so every responsibility stays visible."
+            : "Requests move forward, results return, and the outcome closes the loop."}
+        </p>
+      </div>
+    );
+  }
 
-          return (
-            <g data-edge-id={edge.id} data-flow={edge.kind} data-state={state} key={edge.id}>
-              <line markerEnd={markerEnd} x1={source.x} x2={target.x} y1={source.y} y2={target.y} />
-              {(state === "active" || state === "failed" || state === "retry" || state === "recovered") && (
-                <text x={midpointX} y={midpointY}>{activeLabel}</text>
-              )}
-            </g>
-          );
-        })}
-      </svg>
+  const flowLegs = buildAgentFlowLegViews(model, step);
+  const starWorkers = model.components.filter(
+    (component) => component.groupId === "agents" && component.kind === "worker",
+  );
+  const activeContracts = flowLegs.flatMap((flowLeg) => {
+    const source = getAgentGroup(model, flowLeg.sourceGroupId).shortLabel;
+    const target = getAgentGroup(model, flowLeg.targetGroupId).shortLabel;
+    if (step.topology !== "star") {
+      return [{ ...flowLeg, source, target, contract: flowLeg.label }];
+    }
 
-      <div className="agent-map__nodes">
-        {simulation.nodes.map((node) => {
-          const position = nodePositions[node.id];
-          if (!position) return null;
-          const state = getNodeState(node, traceStep);
+    return starWorkers.map((worker) => ({
+      ...flowLeg,
+      id: `${flowLeg.id}:${worker.id}`,
+      source: flowLeg.direction === "forward" ? source : worker.shortLabel,
+      target: flowLeg.direction === "forward" ? worker.shortLabel : target,
+      contract: flowLeg.label,
+    }));
+  });
 
+  return (
+    <div aria-live="polite" className="agent-mobile-contracts">
+      <span>Active direction</span>
+      {activeContracts.length === 0 ? (
+        <p>System map first; no path is moving yet.</p>
+      ) : (
+        <ul>
+          {activeContracts.map((contract) => (
+            <li
+              data-direction={contract.direction}
+              data-flow-phase={contract.phaseIndex}
+              data-flow-phases={contract.phaseCount}
+              data-flow-schedule={contract.schedule}
+              data-flow-tone={contract.tone}
+              data-state={contract.state}
+              key={`${step.eventKind}:${contract.id}`}
+            >
+              <div className="agent-mobile-contracts__route">
+                <strong>{contract.source}</strong>
+                <span aria-hidden="true" className="agent-mobile-contracts__track">
+                  <i />
+                </span>
+                <ArrowRight aria-hidden="true" />
+                <strong>{contract.target}</strong>
+              </div>
+              <span>{contract.contract}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function AgentGroupCard({
+  group,
+  model,
+  onSelectTarget,
+  selectedTarget,
+  step,
+}: {
+  readonly group: AgentComponentGroup;
+} & AgentArchitectureMapProps): React.JSX.Element {
+  const activeComponentIds = new Set(step.activeComponentIds);
+  const activeGroupIds = new Set(getActiveGroupIds(model, step));
+  const selectedKey = getAgentDetailTargetKey(selectedTarget);
+  const groupTarget: AgentDetailTarget = { kind: "group", groupId: group.id };
+  const groupSelected = selectedKey === getAgentDetailTargetKey(groupTarget);
+  const components = group.componentIds.map((componentId) => {
+    const component = model.components.find((candidate) => candidate.id === componentId);
+    if (!component) throw new Error(`Missing component "${componentId}" in group "${group.id}".`);
+    return component;
+  });
+
+  return (
+    <section
+      aria-label={`${group.label} components`}
+      className="agent-group-card"
+      data-accent={group.accent}
+      data-active={activeGroupIds.has(group.id)}
+      data-group-id={group.id}
+      data-group-order={agentGroupOrder.indexOf(group.id)}
+    >
+      <button
+        aria-haspopup="dialog"
+        aria-pressed={groupSelected}
+        className="agent-group-card__heading"
+        onClick={(event) => onSelectTarget(groupTarget, event.currentTarget)}
+        type="button"
+      >
+        <span>{String(agentGroupOrder.indexOf(group.id) + 1).padStart(2, "0")}</span>
+        <strong>{group.label}</strong>
+        <Info aria-hidden="true" />
+      </button>
+      <div className="agent-group-card__components">
+        {components.map((component) => {
+          const target: AgentDetailTarget = {
+            kind: "component",
+            componentId: component.id,
+          };
+          const isSelected = selectedKey === getAgentDetailTargetKey(target);
           return (
             <button
               aria-haspopup="dialog"
-              aria-label={`Learn about ${node.label}`}
-              className="agent-map-node"
-              data-accent={node.accent}
-              data-node-id={node.id}
-              data-state={state}
-              key={node.id}
-              onClick={() => onOpenDetail({ kind: "node", nodeId: node.id })}
-              style={{
-                left: `${(position.x / mapWidth) * 100}%`,
-                top: `${(position.y / mapHeight) * 100}%`,
-              }}
+              aria-label={`Inspect ${component.label}`}
+              aria-pressed={isSelected}
+              className="agent-component-button"
+              data-accent={component.accent}
+              data-active={activeComponentIds.has(component.id)}
+              data-component-id={component.id}
+              key={component.id}
+              onClick={(event) => onSelectTarget(target, event.currentTarget)}
               type="button"
             >
-              <AgentNodeIcon kind={node.kind} />
-              <span><small>{node.zone}</small><strong>{node.shortLabel}</strong></span>
-              <Info aria-hidden="true" className="agent-map-node__learn" />
+              <span className="agent-component-button__icon">
+                <AgentNodeIcon kind={component.kind} />
+              </span>
+              <span>{component.shortLabel}</span>
             </button>
           );
         })}
       </div>
-    </div>
+    </section>
   );
 }
 
-function MobileArchitectureMap({
-  phase,
-  simulation,
-  traceStep,
-  onOpenDetail,
-}: AgentArchitectureMapProps): React.JSX.Element {
-  const activePhaseIndex = agentPhases.indexOf(phase);
-  const activeNodes = simulation.nodes.filter((node) => traceStep.nodeIds.includes(node.id));
+const attemptStatusLabels: Readonly<Record<AgentAttemptStatus, string>> = {
+  waiting: "Waiting",
+  running: "Running",
+  "timed-out": "Timed out",
+  returned: "Returned",
+};
 
+function AttemptStatus({ status }: { readonly status: AgentAttemptStatus }): React.JSX.Element {
   return (
-    <div className="agent-map__mobile">
-      <div className="agent-mini-map" aria-label="Architecture orientation map">
-        {agentPhases.map((candidate, index) => (
-          <span
-            className={candidate === phase ? "is-active" : index < activePhaseIndex ? "is-complete" : ""}
-            key={candidate}
-          >
-            {candidate}
-          </span>
-        ))}
-      </div>
-
-      {phase !== "overview" && (
-        <section className="agent-mobile-current" aria-labelledby="agent-mobile-current-heading">
-          <header><small>Current flow</small><h3 id="agent-mobile-current-heading">Components active now</h3></header>
-          <div className="agent-mobile-focus">
-            {activeNodes.map((node) => (
-              <button
-                aria-haspopup="dialog"
-                aria-label={`Learn about ${node.label}`}
-                data-accent={node.accent}
-                data-state={getNodeState(node, traceStep)}
-                key={node.id}
-                onClick={() => onOpenDetail({ kind: "node", nodeId: node.id })}
-                type="button"
-              >
-                <AgentNodeIcon kind={node.kind} />
-                <span>
-                  <small>{node.zone}</small><strong>{node.label}</strong><p>{node.description}</p>
-                  <em>
-                    {traceStep.state === "failed"
-                      ? "Failed · no result returned"
-                      : traceStep.state === "retry"
-                        ? "Retry · new bounded call"
-                        : traceStep.state === "recovered"
-                          ? "Recovered · evidence returned"
-                        : "Learn about this component"}
-                  </em>
-                </span>
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
-
-      <section className="agent-mobile-browser" aria-labelledby="agent-mobile-browser-heading">
-        <header><small>Architecture browser</small><h3 id="agent-mobile-browser-heading">Explore every layer</h3></header>
-        <div className="agent-mobile-zones">
-          {architectureZones.map((zone) => {
-            const count = simulation.nodes.filter((node) => node.zone === zone).length;
-            return (
-              <button
-                aria-haspopup="dialog"
-                aria-label={`Learn about ${architectureZoneLearning[zone].label}`}
-                key={zone}
-                onClick={() => onOpenDetail({ kind: "zone", zone })}
-                type="button"
-              >
-                <GitBranch aria-hidden="true" />
-                <span><small>{count} components</small><strong>{architectureZoneLearning[zone].label}</strong></span>
-                <Info aria-hidden="true" />
-              </button>
-            );
-          })}
-        </div>
-      </section>
-    </div>
+    <strong data-state={status}>
+      {status === "timed-out" && <ClockAlert aria-hidden="true" />}
+      <span>{attemptStatusLabels[status]}</span>
+    </strong>
   );
 }
 
-export function AgentArchitectureMap(props: AgentArchitectureMapProps): React.JSX.Element {
-  const traceState = props.traceStep.state ?? "progress";
+function RecoveryAttempts({ step }: { readonly step: AgentLessonStep }): React.JSX.Element | null {
+  if (step.topology !== "retry") return null;
+  if (!step.attemptStatuses) {
+    throw new Error(`Retry lesson "${step.eventKind}" is missing attempt statuses.`);
+  }
+  const [attemptOne, attemptTwo] = step.attemptStatuses;
+  return (
+    <section aria-live="polite" className="agent-retry-ledger">
+      <div>
+        <span>Attempt 1</span>
+        <AttemptStatus status={attemptOne} />
+      </div>
+      <ArrowRight aria-hidden="true" />
+      <div>
+        <span>Attempt 2</span>
+        <AttemptStatus status={attemptTwo} />
+      </div>
+      <p>
+        {attemptOne === "timed-out"
+          ? "Attempt 1's deadline expired with no result; Attempt 2 is a separate request."
+          : "Each attempt has its own request and status; only completed calls have a return."}
+      </p>
+    </section>
+  );
+}
 
+export function AgentArchitectureMap({
+  model,
+  onSelectTarget,
+  selectedTarget,
+  step,
+}: AgentArchitectureMapProps): React.JSX.Element {
+  const TopologyIcon = topologyIcons[step.topology];
+  const selectedKey = getAgentDetailTargetKey(selectedTarget);
+  const systemMotion = step.eventKind === "map-components"
+    ? "group-tour"
+    : step.eventKind === "show-harness"
+      ? "harness-loop"
+      : "contract-flow";
   return (
     <section
-      aria-label="Agent architecture map"
-      className="agent-map"
-      data-phase={props.phase}
-      data-trace-state={traceState}
+      aria-label="Interactive AI agent system map"
+      className="agent-architecture-map"
+      data-flow-schedule={step.eventKind === "show-harness" ? "system-overview" : "lesson"}
+      data-lesson-state={step.state}
+      data-system-motion={systemMotion}
+      data-topology={step.topology}
     >
-      <header className="agent-map__trace" aria-live="polite" data-state={traceState}>
-        <span><small>Flow</small>{props.traceStep.number}</span>
-        <div><small>Current flow</small><strong>{props.traceStep.label}</strong></div>
-        <p><small>Carries</small><strong>{props.traceStep.packet}</strong></p>
-        <div className="agent-map__trace-guide">
-          {traceState === "failed" ? (
-            <CircleX aria-hidden="true" />
-          ) : traceState === "retry" ? (
-            <RotateCcw aria-hidden="true" />
-          ) : traceState === "recovered" ? (
-            <CheckCircle2 aria-hidden="true" />
-          ) : (
-            <Info aria-hidden="true" />
-          )}
-          <span>
-            {traceState === "failed"
-              ? "Failed observation. Nothing continues as a result."
-              : traceState === "retry"
-                ? "New attempt. The failed call remains separate."
-                : traceState === "recovered"
-                  ? "Attempt 2 succeeded. Evidence can now advance."
-                  : props.traceStep.eventKind === "run-broad-log-query"
-                    ? "Attempt 1 is still running. No result exists yet."
-                    : "Select any component or layer to learn how it works."}
+      <header className="agent-lesson-card">
+        <div className="agent-lesson-card__pattern">
+          <span><TopologyIcon aria-hidden="true" /></span>
+          <div>
+            <small>Pattern</small>
+            <strong>{step.patternLabel}</strong>
+          </div>
+        </div>
+        <div className="agent-lesson-card__copy">
+          <small>Focus · {agentLessonStateLabels[step.state]}</small>
+          <h3>{step.label}</h3>
+          <p>{step.summary}</p>
+        </div>
+        <p className="agent-lesson-card__reading">{getTopologyDescription(step.topology)}</p>
+      </header>
+
+      <div aria-label="Architecture concepts" className="agent-concept-buttons" role="group">
+        {model.concepts.map((concept) => {
+          const target: AgentDetailTarget = { kind: "concept", conceptId: concept.id };
+          return (
+            <button
+              aria-haspopup="dialog"
+              aria-pressed={selectedKey === getAgentDetailTargetKey(target)}
+              key={concept.id}
+              onClick={(event) => onSelectTarget(target, event.currentTarget)}
+              type="button"
+            >
+              {concept.id === "harness" ? (
+                <ShieldCheck aria-hidden="true" />
+              ) : concept.id === "run-loop" ? (
+                <RefreshCw aria-hidden="true" />
+              ) : (
+                <GitBranch aria-hidden="true" />
+              )}
+              <span>{concept.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <MobileActiveContracts model={model} step={step} />
+
+      <div className="agent-system-canvas">
+        <div aria-hidden="true" className="agent-harness-boundary">
+          <span className="agent-harness-boundary__frame" />
+          <span className="agent-harness-boundary__label">
+            <ShieldCheck /> Agent harness boundary
           </span>
         </div>
-      </header>
-      {props.phase === "recover" && (
-        <RecoveryAttemptLedger traceStep={props.traceStep} />
-      )}
-      <div className="agent-harness" data-trace-state={traceState}>
-        <HarnessHeader onOpenDetail={props.onOpenDetail} simulation={props.simulation} traceStep={props.traceStep} />
-        <LoopRail onOpenDetail={props.onOpenDetail} simulation={props.simulation} traceStep={props.traceStep} />
-        <DesktopArchitectureMap onOpenDetail={props.onOpenDetail} simulation={props.simulation} traceStep={props.traceStep} />
-        <MobileArchitectureMap {...props} />
+        <ArchitectureConnectors
+          key={`connectors:${step.eventKind}`}
+          model={model}
+          step={step}
+        />
+        <div className="agent-system-grid">
+          {agentGroupOrder.map((groupId) => (
+            <AgentGroupCard
+              group={getAgentGroup(model, groupId)}
+              key={groupId}
+              model={model}
+              onSelectTarget={onSelectTarget}
+              selectedTarget={selectedTarget}
+              step={step}
+            />
+          ))}
+        </div>
+        <WorkerStarOverlay
+          key={`star:${step.eventKind}`}
+          model={model}
+          step={step}
+        />
       </div>
-      <div className="agent-map__legend" aria-label="Architecture flow legend">
-        <span><i data-flow="request" />Request / task</span>
-        <span><i data-flow="context" />Context / memory</span>
-        <span><i data-flow="handoff" />Agent handoff</span>
-        <span><i data-flow="tool" />Tool call</span>
-        <span><i data-flow="failed" />Failed call</span>
-        <span><i data-flow="retry" />New retry</span>
-        <span><i data-flow="recovered" />Recovered result</span>
-        <span><LockKeyhole aria-hidden="true" />Approval-gated write</span>
-      </div>
+      <RecoveryAttempts step={step} />
     </section>
   );
 }

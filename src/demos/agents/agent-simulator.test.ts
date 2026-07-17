@@ -1,221 +1,165 @@
 import { describe, expect, it } from "vitest";
 
 import { validateStory } from "../../framework/story";
-import {
-  agentEngineeringConceptLearning,
-  architectureZoneLearning,
-  architectureZones,
-} from "./agent-knowledge";
+import { isClosedControlCycle } from "./agent-diagram-model";
+import { agentGroupOrder } from "./agent-knowledge";
 import { agentPhases } from "./agent-routing";
-import { simulateAgentOrchestration } from "./agent-simulator";
+import { simulateAgentArchitecture } from "./agent-simulator";
 import { agentPhaseStories, agentStory } from "./agent-story";
 
-describe("agent orchestration simulation", () => {
-  it("is deterministic and models the complete runtime topology", () => {
-    const first = simulateAgentOrchestration("pending-primary");
-    const second = simulateAgentOrchestration("pending-primary");
+describe("generic agent architecture model", () => {
+  it("is deterministic and contains every reusable architecture atom once", () => {
+    const first = simulateAgentArchitecture();
+    const second = simulateAgentArchitecture();
+    const model = first.data;
 
     expect(first).toEqual(second);
-    expect(first.data.nodes).toHaveLength(20);
-    expect(first.data.agents).toHaveLength(4);
-    expect(first.data.mcpServers).toHaveLength(4);
-    expect(first.data.trace).toHaveLength(32);
-    expect(first.data.harnessFacets).toHaveLength(5);
-    expect(first.data.loopPolicy.stages).toHaveLength(5);
-    expect(first.data.checks.every((check) => check.passed)).toBe(true);
-  });
+    expect(model.groups.map(({ id }) => id)).toEqual(agentGroupOrder);
+    expect(model.groups).toHaveLength(8);
+    expect(model.components).toHaveLength(24);
+    expect(model.relationships).toHaveLength(12);
+    expect(model.concepts).toHaveLength(3);
+    expect(model.trace).toHaveLength(16);
 
-  it("keeps models stateless and memory owned by the gateway", () => {
-    const simulation = simulateAgentOrchestration().data;
+    const declaredIds = model.groups.flatMap(({ componentIds }) => componentIds);
+    const componentIds = model.components.map(({ id }) => id);
+    expect(declaredIds).toHaveLength(new Set(declaredIds).size);
+    expect(new Set(declaredIds)).toEqual(new Set(componentIds));
 
-    expect(simulation.models.every((model) => model.stateless)).toBe(true);
-    expect(simulation.memoryStores.every((store) => store.owner === "gateway")).toBe(true);
-    expect(
-      simulation.memoryStores.find((store) => store.scope === "session")?.retention,
-    ).toMatch(/75%/);
-  });
-
-  it("keeps every graph and trace reference valid", () => {
-    const simulation = simulateAgentOrchestration().data;
-    const nodeIds = new Set(simulation.nodes.map((node) => node.id));
-    const edgeIds = new Set(simulation.edges.map((edge) => edge.id));
-
-    for (const edge of simulation.edges) {
-      expect(nodeIds.has(edge.sourceId)).toBe(true);
-      expect(nodeIds.has(edge.targetId)).toBe(true);
-    }
-
-    for (const step of simulation.trace) {
-      expect(step.nodeIds.every((nodeId) => nodeIds.has(nodeId))).toBe(true);
-      expect(step.edgeIds.every((edgeId) => edgeIds.has(edgeId))).toBe(true);
-      expect(simulation.loopPolicy.stages.some((stage) => stage.id === step.loopStage)).toBe(true);
-      expect(step.loopPass).not.toBe("");
+    for (const component of model.components) {
+      const owner = model.groups.find(({ id }) => id === component.groupId);
+      expect(owner?.componentIds).toContain(component.id);
     }
   });
 
-  it("provides complete architecture learning content for every component and layer", () => {
-    const simulation = simulateAgentOrchestration().data;
+  it("resolves every relationship, trace leg, and closed control cycle", () => {
+    const model = simulateAgentArchitecture().data;
+    const groupIds = new Set(model.groups.map(({ id }) => id));
+    const relationshipIds = new Set(model.relationships.map(({ id }) => id));
+    const componentIds = new Set(model.components.map(({ id }) => id));
 
-    for (const node of simulation.nodes) {
-      expect(node.learning.purpose).not.toBe("");
-      expect(node.learning.stateAndAuthority).not.toBe("");
-      expect(node.learning.designRationale).not.toBe("");
-      expect(node.learning.risk).not.toBe("");
+    for (const relationship of model.relationships) {
+      expect(groupIds.has(relationship.sourceGroupId)).toBe(true);
+      expect(groupIds.has(relationship.targetGroupId)).toBe(true);
+      if (relationship.interaction === "exchange") {
+        expect(relationship.returnLabel).not.toBe("");
+        expect(relationship.returnTone).toBe("response");
+      }
     }
 
-    for (const zone of architectureZones) {
-      const learning = architectureZoneLearning[zone];
-      expect(learning.label).not.toBe("");
-      expect(learning.summary).not.toBe("");
-      expect(learning.purpose).not.toBe("");
-      expect(learning.stateAndAuthority).not.toBe("");
-      expect(learning.designRationale).not.toBe("");
+    for (const step of model.trace) {
+      expect(step.activeComponentIds.every((id) => componentIds.has(id))).toBe(true);
+      expect(step.contractLegs.every((leg) => relationshipIds.has(leg.relationshipId))).toBe(true);
+    }
+
+    expect(model.cycles).toHaveLength(1);
+    expect(isClosedControlCycle(model)).toBe(true);
+  });
+
+  it("keeps all learning contracts complete", () => {
+    const model = simulateAgentArchitecture().data;
+    const learningRecords = [
+      ...model.groups.map(({ learning }) => learning),
+      ...model.components.map(({ learning }) => learning),
+      ...model.concepts.map(({ learning }) => learning),
+    ];
+
+    for (const learning of learningRecords) {
+      expect(learning.role).not.toBe("");
+      expect(learning.receives).not.toBe("");
+      expect(learning.returns).not.toBe("");
+      expect(learning.owns).not.toBe("");
+      expect(learning.engineeringNote).not.toBe("");
       expect(learning.risk).not.toBe("");
     }
-
-    for (const learning of Object.values(agentEngineeringConceptLearning)) {
-      expect(learning.label).not.toBe("");
-      expect(learning.summary).not.toBe("");
-      expect(learning.purpose).not.toBe("");
-      expect(learning.stateAndAuthority).not.toBe("");
-      expect(learning.designRationale).not.toBe("");
-      expect(learning.risk).not.toBe("");
-      expect(learning.relationship).not.toBe("");
-    }
-
-    const coordinator = simulation.nodes.find((node) => node.id === "orchestrator");
-    const remediationAgent = simulation.nodes.find((node) => node.id === "remediation-agent");
-    expect(coordinator?.learning.designRationale).toMatch(/Router/);
-    expect(coordinator?.learning.designRationale).toMatch(/DAG/);
-    expect(remediationAgent?.learning.designRationale).toMatch(/DAG/);
   });
 
-  it("records a failed log query and a recovered retry without losing other work", () => {
-    const simulation = simulateAgentOrchestration().data;
-    const failed = simulation.observations.find((observation) => observation.status === "failed");
-    const recovered = simulation.observations.find((observation) => observation.status === "recovered");
+  it("models failure and retry as separate calls with exact direction", () => {
+    const trace = simulateAgentArchitecture().data.trace;
+    const attempts = trace.filter((step) => step.topology === "retry");
 
-    expect(failed?.output).toMatch(/timed out/i);
-    expect(recovered?.output).toMatch(/worker-pool exhaustion/i);
-    expect(
-      simulation.observations.find((observation) => observation.id === "metrics-saturation")?.status,
-    ).toBe("success");
-    expect(
-      simulation.observations.find((observation) => observation.id === "runbook-retrieval")?.provenance,
-    ).toContain("KB-17");
+    expect(attempts.map(({ eventKind }) => eventKind)).toEqual([
+      "start-tool-attempt",
+      "record-tool-failure",
+      "retry-tool-call",
+      "accept-tool-result",
+    ]);
+    expect(attempts.map(({ attempt }) => attempt)).toEqual([1, 1, 2, 2]);
+    expect(attempts.map(({ state }) => state)).toEqual([
+      "active",
+      "failed",
+      "retry",
+      "recovered",
+    ]);
+    expect(attempts.map(({ contractLegs }) => contractLegs)).toEqual([
+      [{ relationshipId: "agents-to-tools", direction: "forward" }],
+      [{ relationshipId: "agents-to-tools", direction: "forward" }],
+      [{ relationshipId: "agents-to-tools", direction: "forward" }],
+      [{ relationshipId: "agents-to-tools", direction: "return" }],
+    ]);
+    expect(attempts.map(({ attemptStatuses }) => attemptStatuses)).toEqual([
+      ["running", "waiting"],
+      ["timed-out", "waiting"],
+      ["timed-out", "running"],
+      ["timed-out", "returned"],
+    ]);
   });
 
-  it("keeps a failed call separate from its later retry", () => {
-    const simulation = simulateAgentOrchestration().data;
-    const blocked = simulation.trace.find((step) => step.eventKind === "block-remediation");
-    const running = simulation.trace.find((step) => step.eventKind === "run-broad-log-query");
-    const failed = simulation.trace.find((step) => step.eventKind === "detect-tool-failure");
-    const adapt = simulation.trace.find((step) => step.eventKind === "preserve-completed-work");
-    const retry = simulation.trace.find((step) => step.eventKind === "retry-narrow-query");
-    const recovered = simulation.trace.find((step) => step.eventKind === "complete-log-retry");
+  it("keeps scenario language out of the generic teaching model", () => {
+    const modelText = JSON.stringify(simulateAgentArchitecture().data);
+    const storyText = JSON.stringify(agentStory);
+    const scenarioTerms = /CloudOps|checkout|Logs MCP|remediation|Cloud Control|incident/i;
 
-    expect(blocked?.nodeIds).not.toContain("remediation-agent");
-    expect(blocked?.edgeIds).toEqual([]);
-    expect(running?.state).toBeUndefined();
-    expect(running?.packet).toMatch(/awaiting result/);
-    expect(running?.loopStage).toBe("act");
-    expect(failed?.state).toBe("failed");
-    expect(failed?.packet).toMatch(/no result/);
-    expect(failed?.loopStage).toBe("evaluate");
-    expect(failed?.loopPass).toBe("investigation-1");
-    expect(adapt?.loopStage).toBe("adapt-exit");
-    expect(adapt?.loopPass).toBe("investigation-1");
-    expect(retry?.state).toBe("retry");
-    expect(retry?.packet).toMatch(/new call/);
-    expect(retry?.loopStage).toBe("act");
-    expect(retry?.loopPass).toBe("investigation-2");
-    expect(recovered?.state).toBe("recovered");
-    expect(recovered?.packet).toMatch(/result returned/);
-    expect(recovered?.loopStage).toBe("evaluate");
-    expect(running?.number).toBeLessThan(failed?.number ?? 0);
-    expect(failed?.number).toBeLessThan(retry?.number ?? 0);
-    expect(retry?.number).toBeLessThan(recovered?.number ?? 0);
+    expect(modelText).not.toMatch(scenarioTerms);
+    expect(storyText).not.toMatch(scenarioTerms);
   });
 
-  it("never creates Cloud Control actions before approval or after a safe stop", () => {
-    expect(simulateAgentOrchestration("pending-primary").data.externalActions).toEqual([]);
-    expect(simulateAgentOrchestration("pending-safer").data.externalActions).toEqual([]);
-    expect(simulateAgentOrchestration("stopped").data.externalActions).toEqual([]);
-    expect(simulateAgentOrchestration("stopped-safer").data.externalActions).toEqual([]);
-    expect(simulateAgentOrchestration("approved-primary").data.externalActions).toHaveLength(2);
-    expect(simulateAgentOrchestration("approved-safer").data.externalActions).toHaveLength(2);
-  });
+  it("uses plain-first canvas labels and reserves specialist terms for details", () => {
+    const model = simulateAgentArchitecture().data;
+    const visibleCopy = JSON.stringify({
+      groups: model.groups.map(({ label, shortLabel, summary }) => ({ label, shortLabel, summary })),
+      components: model.components.map(({ label, shortLabel }) => ({ label, shortLabel })),
+      trace: model.trace.map(({ label, summary, patternLabel }) => ({ label, summary, patternLabel })),
+    });
+    const engineeringNotes = model.components
+      .map(({ learning }) => learning.engineeringNote)
+      .join(" ");
 
-  it("adds a persistent outcome only after a terminal human decision", () => {
-    const pending = simulateAgentOrchestration("pending-primary").data.memoryStores
-      .find((store) => store.scope === "global");
-    const approved = simulateAgentOrchestration("approved-safer").data.memoryStores
-      .find((store) => store.scope === "global");
-    const stopped = simulateAgentOrchestration("stopped").data.memoryStores
-      .find((store) => store.scope === "global");
-
-    expect(pending?.entries).toHaveLength(1);
-    expect(approved?.entries.at(-1)).toMatch(/restored p95/i);
-    expect(stopped?.entries.at(-1)).toMatch(/no Cloud Control action/i);
+    expect(visibleCopy).not.toMatch(/\b(?:MCP|RAG|DAG)\b/);
+    expect(engineeringNotes).toMatch(/\bMCP\b/);
+    expect(engineeringNotes).toMatch(/\bRAG\b/);
+    expect(engineeringNotes).toMatch(/\bDAG\b/);
   });
 });
 
-describe("agent orchestration stories", () => {
-  it("validates the complete story and every routed phase", () => {
+describe("agent architecture stories", () => {
+  it("validates the complete story and every routed lesson", () => {
     expect(() => validateStory(agentStory)).not.toThrow();
-
     for (const phase of agentPhases) {
       expect(() => validateStory(agentPhaseStories[phase])).not.toThrow();
     }
   });
 
-  it("provides a seven-minute one-timescale guided sequence", () => {
-    const durationMs = agentStory.scenes
-      .flatMap((scene) => scene.events)
-      .reduce((total, event) => total + event.durationMs, 0);
-
-    expect(durationMs).toBe(420_000);
-  });
-
-  it("has one visible trace contract for every story event", () => {
+  it("provides one trace lesson for every story event", () => {
     const storyKinds = agentStory.scenes.flatMap((scene) =>
-      scene.events.map((event) => event.kind),
+      scene.events.map(({ kind }) => kind),
     );
-    const traceKinds = simulateAgentOrchestration().data.trace.map(
-      (step) => step.eventKind,
+    const traceKinds = simulateAgentArchitecture().data.trace.map(
+      ({ eventKind }) => eventKind,
     );
 
     expect(traceKinds).toEqual(storyKinds);
+    expect(agentStory.scenes.flatMap(({ events }) => events)
+      .reduce((total, event) => total + event.durationMs, 0)).toBe(147_000);
   });
 
-  it("blocks remediation until the separate retry has recovered evidence", () => {
-    const executeEvents = agentPhaseStories.execute.scenes.flatMap(
-      (scene) => scene.events,
-    );
-    const recoverEvents = agentPhaseStories.recover.scenes.flatMap(
-      (scene) => scene.events,
-    );
-
-    expect(executeEvents.at(-1)?.kind).toBe("block-remediation");
-    expect(executeEvents.at(-1)?.title).toMatch(/stays blocked/);
-    expect(recoverEvents.map((event) => event.kind)).toEqual([
-      "run-broad-log-query",
-      "detect-tool-failure",
-      "preserve-completed-work",
-      "retry-narrow-query",
-      "complete-log-retry",
-      "reconcile-evidence",
-      "evaluate-output",
-    ]);
-    expect(
-      recoverEvents.reduce((total, event) => total + event.durationMs, 0),
-    ).toBe(75_000);
-    expect(
-      recoverEvents.find((event) => event.kind === "retry-narrow-query")?.title,
-    ).toMatch(/Retry/);
-    expect(
-      recoverEvents.find((event) => event.kind === "complete-log-retry")?.title,
-    ).toMatch(/returns usable evidence/);
-    expect(recoverEvents.at(-1)?.explanation).toMatch(/after the separate retry succeeds/);
+  it("preserves the six teachable deep-link lessons", () => {
+    expect(Object.keys(agentPhaseStories)).toEqual(agentPhases);
+    expect(agentPhaseStories.overview.scenes[0]?.shortTitle).toBe("System");
+    expect(agentPhaseStories.prepare.scenes[0]?.shortTitle).toBe("Input + context");
+    expect(agentPhaseStories.route.scenes[0]?.shortTitle).toBe("Models + agents");
+    expect(agentPhaseStories.execute.scenes[0]?.shortTitle).toBe("Tools");
+    expect(agentPhaseStories.recover.scenes[0]?.shortTitle).toBe("Evaluate + retry");
+    expect(agentPhaseStories.govern.scenes[0]?.shortTitle).toBe("Govern + return");
   });
 });

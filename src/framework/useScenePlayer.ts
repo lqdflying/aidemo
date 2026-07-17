@@ -38,8 +38,10 @@ export interface ScenePlayer<EventKind extends string> {
   readonly controls: ScenePlayerControls;
 }
 
+export type ScenePlayerEndBehavior = "complete" | "loop" | "hold-final";
+
 export interface ScenePlayerOptions {
-  readonly loop?: boolean;
+  readonly endBehavior?: ScenePlayerEndBehavior;
 }
 
 function usePrefersReducedMotion(): boolean {
@@ -74,6 +76,7 @@ function usePrefersReducedMotion(): boolean {
 function createControls(
   state: PlaybackState,
   dispatch: Dispatch<PlaybackAction>,
+  endBehavior: ScenePlayerEndBehavior,
 ): ScenePlayerControls {
   return {
     play: () => dispatch({ type: "play" }),
@@ -84,7 +87,8 @@ function createControls(
     previous: () => dispatch({ type: "previous" }),
     restart: (autoplay = false) =>
       dispatch({ type: "restart", autoplay }),
-    skip: () => dispatch({ type: "skip" }),
+    skip: () =>
+      dispatch({ type: "skip", autoplay: endBehavior === "hold-final" }),
     setSpeed: (speed) => dispatch({ type: "set-speed", speed }),
     goToScene: (sceneIndex, autoplay = false) =>
       dispatch({ type: "go-to-scene", sceneIndex, autoplay }),
@@ -95,6 +99,7 @@ export function useScenePlayer<EventKind extends string>(
   story: DemoStory<EventKind>,
   options: ScenePlayerOptions = {},
 ): ScenePlayer<EventKind> {
+  const endBehavior = options.endBehavior ?? "complete";
   const reducedMotion = usePrefersReducedMotion();
   const reducer = useMemo(() => {
     validateStory(story);
@@ -115,15 +120,19 @@ export function useScenePlayer<EventKind extends string>(
       return undefined;
     }
 
+    const nextCursor = getNextCursor(story, state);
+    if (!nextCursor && endBehavior === "hold-final") {
+      return undefined;
+    }
+
     const timeoutId = window.setTimeout(() => {
-      const nextCursor = getNextCursor(story, state);
       if (nextCursor) {
         dispatch({ type: "next" });
         return;
       }
 
       dispatch(
-        options.loop
+        endBehavior === "loop"
           ? { type: "restart", autoplay: true }
           : { type: "complete" },
       );
@@ -136,13 +145,13 @@ export function useScenePlayer<EventKind extends string>(
     state.sceneIndex,
     state.speed,
     state.status,
-    options.loop,
+    endBehavior,
     story,
   ]);
 
   const controls = useMemo(
-    () => createControls(state, dispatch),
-    [state],
+    () => createControls(state, dispatch, endBehavior),
+    [endBehavior, state],
   );
   const position = getStoryPosition(story, state);
   const progressPercent =

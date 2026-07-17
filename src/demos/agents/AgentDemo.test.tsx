@@ -7,278 +7,609 @@ function setLocation(path: string): void {
   window.history.replaceState({}, "", path);
 }
 
-describe("AgentDemo routing and orchestration", () => {
+const originalMatchMedia = window.matchMedia;
+
+function getApplicationRoot(): HTMLElement {
+  const rootElement = document.getElementById("root");
+  if (!rootElement) throw new Error("The application root is missing from the test document.");
+  return rootElement;
+}
+
+function renderAgentDemo(): ReturnType<typeof render> {
+  return render(<AgentDemo />, { container: getApplicationRoot() });
+}
+
+function mockMobileViewport(): void {
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    value: vi.fn((query: string): MediaQueryList => ({
+      matches: query === "(max-width: 720px)",
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+    writable: true,
+  });
+}
+
+describe("AgentDemo architecture explorer", () => {
   beforeEach(() => {
     setLocation("/demos/agent-orchestration/overview");
+    const rootElement = document.createElement("div");
+    rootElement.id = "root";
+    document.body.append(rootElement);
   });
 
   afterEach(() => {
     cleanup();
+    document.body.style.overflow = "";
+    document.getElementById("root")?.remove();
     vi.useRealTimers();
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: originalMatchMedia,
+      writable: true,
+    });
   });
 
-  it("deep-links to focused phases and marks the current act", () => {
-    setLocation("/demos/agent-orchestration/recover");
-    render(<AgentDemo />);
+  it("renders a generic teaching experience with one stable system canvas", () => {
+    const { container } = renderAgentDemo();
 
-    expect(
-      screen.getByText("Recover: re-plan one failed branch"),
-    ).toBeInTheDocument();
-    const timeline = screen.getByRole("navigation", {
-      name: "Agent orchestration walkthrough pages",
-    });
-    expect(within(timeline).getByRole("button", { name: /Recover/ })).toHaveAttribute(
-      "aria-current",
-      "page",
+    expect(screen.getByRole("heading", { name: "How AI agents work(designing)" }))
+      .toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Interactive AI agent system map" }))
+      .toBeInTheDocument();
+    expect(container.querySelectorAll(".agent-system-canvas")).toHaveLength(1);
+    const harnessFrame = container.querySelector(".agent-harness-boundary__frame");
+    const harnessLabel = container.querySelector(".agent-harness-boundary__label");
+    expect(harnessFrame).toBeInTheDocument();
+    expect(harnessLabel).toHaveTextContent("Agent harness boundary");
+    expect(harnessFrame?.contains(harnessLabel)).toBe(false);
+    expect(container.querySelector(".agent-architecture-atlas")).not.toBeInTheDocument();
+    expect(container.querySelector(".agent-topology-focus")).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/CloudOps|checkout|remediation|Cloud Control/i);
+  });
+
+  it("keeps the System lesson moving through a group tour and a live end-to-end flow", () => {
+    const { container } = renderAgentDemo();
+    const map = screen.getByRole("region", { name: "Interactive AI agent system map" });
+
+    expect(map).toHaveAttribute("data-system-motion", "group-tour");
+    expect(container.querySelectorAll(".agent-group-card[data-group-order]")).toHaveLength(8);
+
+    fireEvent.click(screen.getByRole("button", { name: "Next animation step" }));
+
+    expect(map).toHaveAttribute("data-system-motion", "harness-loop");
+    expect(map).toHaveAttribute("data-flow-schedule", "system-overview");
+    expect(container.querySelectorAll(
+      '[data-flow-schedule="system-overview"][data-flow-id]',
+    )).toHaveLength(13);
+    expect(container.querySelectorAll(
+      '[data-flow-schedule="system-overview"][data-flow-phase="11"][data-flow-id]',
+    )).toHaveLength(2);
+    expect(container.querySelector(".agent-stage"))
+      .toHaveAttribute("data-playback", "paused");
+  });
+
+  it("plays the System tour once and holds the full dataflow live", () => {
+    vi.useFakeTimers();
+    const { container } = renderAgentDemo();
+    const map = screen.getByRole("region", { name: "Interactive AI agent system map" });
+
+    expect(screen.getByText("Final flow stays live")).toHaveAttribute(
+      "title",
+      "The group tour runs once, then the full system flow continues until paused or restarted",
     );
+    fireEvent.click(screen.getByRole("button", { name: "Play animation" }));
+    act(() => vi.advanceTimersByTime(9_000));
+
+    expect(map).toHaveAttribute("data-system-motion", "harness-loop");
+    expect(container.querySelector(".agent-stage"))
+      .toHaveAttribute("data-playback", "playing");
+    expect(screen.getByRole("button", { name: "Pause animation" }))
+      .toBeInTheDocument();
+
+    act(() => vi.advanceTimersByTime(48_000));
+
+    expect(map).toHaveAttribute("data-system-motion", "harness-loop");
+    expect(container.querySelector(".agent-stage"))
+      .toHaveAttribute("data-playback", "playing");
+    expect(screen.getByRole("button", { name: "Pause animation" }))
+      .toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Pause animation" }));
+    expect(container.querySelector(".agent-stage"))
+      .toHaveAttribute("data-playback", "paused");
+    fireEvent.click(screen.getByRole("button", { name: "Play animation" }));
+    expect(container.querySelector(".agent-stage"))
+      .toHaveAttribute("data-playback", "playing");
+
+    fireEvent.click(screen.getByRole("button", { name: "Restart page" }));
+    expect(map).toHaveAttribute("data-system-motion", "group-tour");
+    expect(container.querySelector(".agent-stage"))
+      .toHaveAttribute("data-playback", "idle");
   });
 
-  it("maps legacy deep links to the closest new act", () => {
+  it("keeps manual System steps paused but skips to the live final flow", () => {
+    const { container } = renderAgentDemo();
+    const map = screen.getByRole("region", { name: "Interactive AI agent system map" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Next animation step" }));
+    expect(map).toHaveAttribute("data-system-motion", "harness-loop");
+    expect(container.querySelector(".agent-stage"))
+      .toHaveAttribute("data-playback", "paused");
+
+    fireEvent.click(screen.getByRole("button", { name: "Restart page" }));
+    expect(map).toHaveAttribute("data-system-motion", "group-tour");
+
+    fireEvent.click(screen.getByRole("button", { name: "Skip page" }));
+    expect(map).toHaveAttribute("data-system-motion", "harness-loop");
+    expect(container.querySelector(".agent-stage"))
+      .toHaveAttribute("data-playback", "playing");
+    expect(screen.getByRole("button", { name: "Pause animation" }))
+      .toBeInTheDocument();
+  });
+
+  it("routes horizontal request and return labels through dedicated lanes", () => {
+    setLocation("/demos/agent-orchestration/execute");
+    const { container } = renderAgentDemo();
+    const requestPath = container.querySelector(
+      '[data-relationship-id="agents-to-tools"] path[data-flow-lane="forward"]',
+    );
+    const responsePath = container.querySelector(
+      '[data-relationship-id="agents-to-tools"] path[data-flow-lane="return"]',
+    );
+
+    expect(container.querySelector(".agent-connectors"))
+      .toHaveAttribute("viewBox", "0 0 1000 620");
+    expect(container.querySelector("#agent-arrow-request"))
+      .toHaveAttribute("markerUnits", "userSpaceOnUse");
+    expect(container.querySelector("#agent-arrow-request"))
+      .toHaveAttribute("viewBox", "0 0 7 6");
+    expect(container.querySelector("#agent-arrow-request"))
+      .toHaveAttribute("markerWidth", "7");
+    expect(container.querySelector("#agent-arrow-request"))
+      .toHaveAttribute("markerHeight", "6");
+    expect(requestPath).toHaveAttribute("data-flow-tone", "request");
+    expect(requestPath).toHaveAttribute("marker-end", "url(#agent-arrow-request)");
+    expect(requestPath?.getAttribute("d")).toContain("556");
+    expect(responsePath).toHaveAttribute("data-flow-tone", "response");
+    expect(responsePath).toHaveAttribute("marker-end", "url(#agent-arrow-response)");
+    expect(responsePath?.getAttribute("d")).toContain("592");
+    expect(container.querySelector(
+      '[data-relationship-id="runtime-to-context"] path[data-direction="forward"]',
+    )).toHaveAttribute("d", "M 276 317 L 276 262");
+    expect(container.querySelector(
+      '[data-relationship-id="runtime-to-context"] path[data-direction="return"]',
+    )).toHaveAttribute("d", "M 324 262 L 324 317");
+    expect(container.querySelector(
+      '[data-relationship-id="outcome-to-entry"] path[data-direction="forward"]',
+    )?.getAttribute("d")).toContain("616");
+    expect(container.querySelector(
+      '[data-relationship-id="agents-to-tools"] text[data-flow-lane="forward"]',
+    )).toHaveTextContent("validated tool call");
+    expect(container.querySelector(
+      '[data-relationship-id="agents-to-tools"] text[data-flow-lane="return"]',
+    )).toHaveTextContent("result or explicit error");
+  });
+
+  it("deep-links to all lessons and preserves legacy route aliases", () => {
+    setLocation("/demos/agent-orchestration/recover");
+    const { unmount } = renderAgentDemo();
+
+    expect(screen.getByText("Evaluate + retry: keep attempts separate")).toBeInTheDocument();
+    const timeline = screen.getByRole("navigation", { name: "AI agent system lessons" });
+    expect(within(timeline).getByRole("button", { name: /Evaluate \+ retry/ }))
+      .toHaveAttribute("aria-current", "page");
+
+    unmount();
+    getApplicationRoot().remove();
+    const replacementRoot = document.createElement("div");
+    replacementRoot.id = "root";
+    document.body.append(replacementRoot);
     setLocation("/demos/agent-orchestration/adapt");
-    render(<AgentDemo />);
-
-    expect(screen.getByText("Recover: re-plan one failed branch")).toBeInTheDocument();
+    renderAgentDemo();
+    expect(screen.getByText("Evaluate + retry: keep attempts separate")).toBeInTheDocument();
   });
 
-  it("updates the URL and canvas from the shared timeline", () => {
-    render(<AgentDemo />);
-    const timeline = screen.getByRole("navigation", {
-      name: "Agent orchestration walkthrough pages",
-    });
+  it("updates the URL and lesson from the shared timeline", () => {
+    renderAgentDemo();
+    const timeline = screen.getByRole("navigation", { name: "AI agent system lessons" });
 
-    fireEvent.click(within(timeline).getByRole("button", { name: /Execute/ }));
+    fireEvent.click(within(timeline).getByRole("button", { name: /Tools/ }));
 
     expect(window.location.pathname).toBe("/demos/agent-orchestration/execute");
-    expect(screen.getByText("Execute: agents use models, MCP, and RAG")).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "Agent architecture map" })).toBeInTheDocument();
+    expect(screen.getByText("Tools: use typed functions and knowledge")).toBeInTheDocument();
+    expect(screen.getByText("Tool request / return")).toBeInTheDocument();
   });
 
-  it("opens exact component learning, pauses playback, and restores trigger focus", () => {
-    render(<AgentDemo />);
+  it("shows eight grouped controls and every atomic component exactly once", () => {
+    renderAgentDemo();
+
+    for (const label of [
+      "Input & channels",
+      "Agent runtime",
+      "Context & memory",
+      "Models",
+      "Agents & workers",
+      "Tools & knowledge",
+      "Governance",
+      "Outcome & return",
+    ]) {
+      expect(screen.getByRole("region", { name: `${label} components` }))
+        .toBeInTheDocument();
+    }
+
+    expect(screen.getAllByRole("button", { name: /^Inspect / })).toHaveLength(24);
+  });
+
+  it("pauses playback, opens exact component details, and restores focus", () => {
+    setLocation("/demos/agent-orchestration/route");
+    const { container } = renderAgentDemo();
     fireEvent.click(screen.getByRole("button", { name: "Play animation" }));
-    const trigger = screen.getByRole("button", { name: "Learn about Coordinator loop" });
+    const trigger = screen.getByRole("button", { name: "Inspect Coordinator" });
 
     trigger.focus();
     fireEvent.click(trigger);
 
-    const dialog = screen.getByRole("dialog", { name: "Coordinator loop" });
-    expect(within(dialog).getByRole("heading", { name: "What it does" })).toBeInTheDocument();
-    expect(within(dialog).getByRole("heading", { name: "State & authority" })).toBeInTheDocument();
-    expect(within(dialog).getByRole("heading", { name: "Why this design" })).toBeInTheDocument();
-    expect(within(dialog).getByRole("heading", { name: "What can go wrong" })).toBeInTheDocument();
-    expect(within(dialog).getByRole("heading", { name: "In this incident" })).toBeInTheDocument();
-    expect(within(dialog).getByText(/Router selects the bounded workflow/)).toBeInTheDocument();
-    expect(within(dialog).getByText(/DAG exposes parallel investigations/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Play animation" })).toBeInTheDocument();
+    const dialog = screen.getByRole("dialog", { name: "Coordinator" });
+    const overlay = dialog.closest("[data-agent-detail-overlay]");
+    expect(overlay?.parentElement).toBe(document.body);
+    expect(getApplicationRoot()).toHaveAttribute("inert");
+    expect(getApplicationRoot()).toHaveAttribute("aria-hidden", "true");
+    expect(document.body.style.overflow).toBe("hidden");
+    for (const field of [
+      "Role",
+      "Receives",
+      "Returns",
+      "Owns / does not own",
+      "Engineer note",
+      "Common risk",
+    ]) {
+      expect(within(dialog).getByText(field)).toBeInTheDocument();
+    }
+    expect(trigger).toHaveAttribute("aria-pressed", "true");
+    expect(container.querySelector(".agent-stage")).toHaveAttribute("data-playback", "paused");
+    expect(within(dialog).getByRole("button", { name: "Close component details" }))
+      .toHaveFocus();
 
-    fireEvent.keyDown(document, { key: "Escape" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Close component details" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Play animation" })).toBeInTheDocument();
+    expect(getApplicationRoot()).not.toHaveAttribute("inert");
+    expect(getApplicationRoot()).not.toHaveAttribute("aria-hidden");
+    expect(document.body.style.overflow).toBe("");
     expect(trigger).toHaveFocus();
   });
 
-  it("opens a layer, drills into a component, and navigates back", () => {
-    render(<AgentDemo />);
-    const trigger = screen.getAllByRole("button", { name: "Learn about Agent runtime" })[0]!;
+  it("keeps compact facts for groups and opens diagram-first engineering concepts", () => {
+    renderAgentDemo();
+
+    fireEvent.click(screen.getByRole("button", { name: /Tools & knowledge/ }));
+    const groupDialog = screen.getByRole("dialog", { name: "Tools & knowledge" });
+    expect(groupDialog).toHaveAttribute("data-detail-kind", "group");
+    expect(within(groupDialog).getByText(/MCP can standardize tool contracts/))
+      .toBeInTheDocument();
+    fireEvent.click(within(groupDialog).getByRole("button", { name: "Close component details" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Agent run loop" }));
+    const conceptDialog = screen.getByRole("dialog", { name: "Agent run loop" });
+    expect(conceptDialog).toHaveAttribute("data-detail-kind", "concept");
+    expect(conceptDialog).toHaveAttribute("data-concept-id", "run-loop");
+    expect(within(conceptDialog).getByRole("figure", {
+      name: "run loop concept diagram",
+    })).toBeInTheDocument();
+    expect(within(conceptDialog).getByText(/explicit completion criteria/))
+      .toBeInTheDocument();
+  });
+
+  it("shows the agent harness as a controlled responsibility-boundary diagram", () => {
+    renderAgentDemo();
+    fireEvent.click(screen.getByRole("button", { name: "Agent harness" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Agent harness" });
+    expect(within(dialog).getByRole("region", {
+      name: "Agent harness responsibility boundary",
+    })).toBeInTheDocument();
+    for (const label of [
+      "State & context",
+      "Orchestration",
+      "Tools",
+      "Policy",
+      "Evaluation & tracing",
+      "Delivery",
+      "Replaceable model",
+      "Request<T>",
+      "Verified Result<T>",
+      "Verified response",
+    ]) {
+      expect(within(dialog).getAllByText(label).length).toBeGreaterThan(0);
+    }
+  });
+
+  it("animates one run-loop adaptation before a separate verified exit", () => {
+    renderAgentDemo();
+    fireEvent.click(screen.getByRole("button", { name: "Agent run loop" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Agent run loop" });
+    const stageList = within(dialog).getByRole("list", { name: "Agent run stages" });
+    for (const label of ["Observe", "Decide", "Act", "Evaluate"]) {
+      expect(within(stageList).getByText(label)).toBeInTheDocument();
+    }
+    expect(within(dialog).getByRole("region", {
+      name: "Adapt loop back to Observe",
+    })).toHaveTextContent("Adapt and observe again");
+    expect(within(dialog).getByRole("region", {
+      name: "Verified exit branch",
+    })).toHaveTextContent("Verified exit");
+
+    const diagramStage = dialog.querySelector('[data-concept-stage="run-loop"]');
+    expect(diagramStage).toHaveAttribute("data-replay", "0");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Replay diagram" }));
+    expect(dialog.querySelector('[data-concept-stage="run-loop"]'))
+      .toHaveAttribute("data-replay", "1");
+  });
+
+  it("distinguishes typed requests, returns, errors, and explicit absence", () => {
+    renderAgentDemo();
+    fireEvent.click(screen.getByRole("button", { name: "Typed contracts" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Typed contracts" });
+    expect(within(dialog).getByRole("region", { name: "Typed request contract" }))
+      .toHaveTextContent("Request<T>");
+    expect(within(dialog).getByRole("region", { name: "Typed return contract" }))
+      .toHaveTextContent("Result<T> | TypedError | NoResult");
+    for (const label of [
+      "Schema",
+      "Identity",
+      "Scope",
+      "Deadline",
+      "Ownership",
+      "Result<T>",
+      "TypedError",
+      "NoResult",
+    ]) {
+      expect(within(dialog).getAllByText(label).length).toBeGreaterThan(0);
+    }
+    expect(dialog.querySelector('[data-tone="response"]')).toBeInTheDocument();
+    expect(dialog.querySelector('[data-tone="error"]')).toBeInTheDocument();
+    expect(dialog.querySelector('[data-tone="absence"]')).toBeInTheDocument();
+  });
+
+  it("traps focus and closes only from the modal backdrop", () => {
+    renderAgentDemo();
+    const trigger = screen.getByRole("button", { name: "Inspect Coordinator" });
+    trigger.focus();
     fireEvent.click(trigger);
 
-    const layerDialog = screen.getByRole("dialog", { name: "Agent runtime" });
-    fireEvent.click(within(layerDialog).getByRole("button", { name: "Learn about Coordinator loop" }));
+    const dialog = screen.getByRole("dialog", { name: "Coordinator" });
+    const closeButton = within(dialog).getByRole("button", {
+      name: "Close component details",
+    });
+    const overlay = dialog.closest<HTMLElement>("[data-agent-detail-overlay]");
+    if (!overlay) throw new Error("The component dialog overlay is missing.");
 
-    const componentDialog = screen.getByRole("dialog", { name: "Coordinator loop" });
-    expect(within(componentDialog).getByRole("button", { name: "Back to previous architecture detail" })).toBeInTheDocument();
-    fireEvent.click(within(componentDialog).getByRole("button", { name: "Back to previous architecture detail" }));
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(closeButton).toHaveFocus();
+    fireEvent.click(dialog);
+    expect(dialog).toBeInTheDocument();
 
-    expect(screen.getByRole("dialog", { name: "Agent runtime" })).toBeInTheDocument();
+    fireEvent.click(overlay);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
   });
 
-  it("teaches Harness Engineering and Loop Engineering from the live architecture", () => {
-    render(<AgentDemo />);
+  it("draws a one-way sequence and a real request-return loop", () => {
+    setLocation("/demos/agent-orchestration/prepare");
+    const { container } = renderAgentDemo();
+    const map = screen.getByRole("region", { name: "Interactive AI agent system map" });
 
-    expect(
-      screen.getByRole("region", { name: /Loop Engineering, System framing, decide/ }),
-    ).toBeInTheDocument();
-    expect(screen.getByText("Intent & skills")).toBeInTheDocument();
-    expect(screen.getByText("Context & memory")).toBeInTheDocument();
-    expect(screen.getByText("Tools & isolation")).toBeInTheDocument();
-    expect(screen.getByText("Policy & authority")).toBeInTheDocument();
-    expect(screen.getByText("Trace & evaluation")).toBeInTheDocument();
+    expect(map).toHaveAttribute("data-topology", "sequence");
+    const inputPath = container.querySelector(
+      '[data-relationship-id="entry-to-runtime"] [data-direction="forward"]',
+    );
+    expect(inputPath).toHaveAttribute("data-active", "true");
+    expect(container.querySelector(
+      '[data-relationship-id="entry-to-runtime"] [data-direction="return"]',
+    )).not.toBeInTheDocument();
 
-    const harnessTrigger = screen.getByRole("button", { name: "Learn about Harness Engineering" });
-    harnessTrigger.focus();
-    fireEvent.click(harnessTrigger);
-    let dialog = screen.getByRole("dialog", { name: "Harness Engineering" });
-    expect(within(dialog).getByRole("heading", { name: "What the harness makes explicit" })).toBeInTheDocument();
-    expect(within(dialog).getByText("Model responsibility")).toBeInTheDocument();
-    expect(within(dialog).getByText("Harness responsibility")).toBeInTheDocument();
-    fireEvent.keyDown(document, { key: "Escape" });
-    expect(harnessTrigger).toHaveFocus();
+    fireEvent.click(screen.getByRole("button", { name: "Next animation step" }));
 
-    fireEvent.click(screen.getByRole("button", { name: "Learn about Loop Engineering" }));
-    dialog = screen.getByRole("dialog", { name: "Loop Engineering" });
-    expect(within(dialog).getByRole("heading", { name: "How this run advances" })).toBeInTheDocument();
-    expect(within(dialog).getByText("Retry budget")).toBeInTheDocument();
-    expect(within(dialog).getByText(/One separate narrowed Logs MCP attempt/)).toBeInTheDocument();
-    expect(within(dialog).getByText("Stop / escalate")).toBeInTheDocument();
+    expect(map).toHaveAttribute("data-topology", "pair-loop");
+    expect(container.querySelector(
+      '[data-relationship-id="runtime-to-context"] [data-direction="forward"]',
+    )).toHaveAttribute("data-flow-tone", "request");
+    expect(container.querySelector(
+      '[data-relationship-id="runtime-to-context"] [data-direction="return"]',
+    )).toHaveAttribute("data-flow-tone", "response");
+    expect(container.querySelector(
+      '[data-flow-id="runtime-to-context:forward"]',
+    )).toHaveAttribute("data-flow-phase", "0");
+    expect(container.querySelector(
+      '[data-flow-id="runtime-to-context:return"]',
+    )).toHaveAttribute("data-flow-phase", "1");
+    expect(screen.getByText("State feedback loop")).toBeInTheDocument();
   });
 
-  it("removes ambiguous trace and pattern controls", () => {
-    render(<AgentDemo />);
+  it("fans star work outward before converging all worker returns", () => {
+    setLocation("/demos/agent-orchestration/route");
+    const { container } = renderAgentDemo();
 
-    expect(screen.queryByRole("button", { name: /Full trace/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Patterns/i })).not.toBeInTheDocument();
-    expect(screen.queryByText(/Handoff \/ Swarm/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Hierarchical/i)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Next animation step" }));
+
+    expect(screen.getByRole("region", { name: "Interactive AI agent system map" }))
+      .toHaveAttribute("data-topology", "star");
+    const star = container.querySelector(".agent-star-overlay");
+    expect(star).toBeInTheDocument();
+    expect(star?.querySelectorAll('[data-flow-id="runtime-to-agents:forward"]'))
+      .toHaveLength(3);
+    expect(star?.querySelectorAll('[data-flow-id="runtime-to-agents:return"]'))
+      .toHaveLength(3);
+    expect(star?.querySelector('[data-flow-id="runtime-to-agents:forward"]'))
+      .toHaveAttribute("data-flow-phase", "0");
+    expect(star?.querySelector('[data-flow-id="runtime-to-agents:return"]'))
+      .toHaveAttribute("data-flow-phase", "1");
+    expect(star?.querySelectorAll(
+      '.agent-star-overlay__path[data-direction="forward"][data-flow-tone="request"]',
+    )).toHaveLength(3);
+    expect(star?.querySelectorAll(
+      '.agent-star-overlay__path[data-direction="return"][data-flow-tone="response"]',
+    )).toHaveLength(3);
+    expect(star?.querySelector("#agent-star-arrow-request"))
+      .toHaveAttribute("markerUnits", "userSpaceOnUse");
+    expect(star?.querySelector("#agent-star-arrow-request"))
+      .toHaveAttribute("viewBox", "0 0 7 6");
+    expect(star?.querySelectorAll(
+      '.agent-star-overlay__path[data-direction="forward"][marker-end="url(#agent-star-arrow-request)"]',
+    )).toHaveLength(3);
+    expect(star?.querySelectorAll(
+      '.agent-star-overlay__path[data-direction="return"][marker-end]',
+    )).toHaveLength(0);
+    expect(star?.querySelector('[data-star-trunk="request"]'))
+      .toHaveAttribute("d", "M 386 412 L 402 412");
+    expect(star?.querySelector('[data-star-trunk="request"]'))
+      .not.toHaveAttribute("marker-end");
+    expect(star?.querySelector('[data-star-trunk="return"]'))
+      .toHaveAttribute("d", "M 402 436 L 386 436");
+    expect(star?.querySelector('[data-star-trunk="return"]'))
+      .toHaveAttribute("marker-end", "url(#agent-star-arrow-response)");
+    expect(star?.querySelectorAll(
+      '[marker-end="url(#agent-star-arrow-response)"]',
+    )).toHaveLength(1);
+    expect(star?.querySelectorAll("[data-star-junction]"))
+      .toHaveLength(2);
+    expect(star?.querySelector(
+      '[data-flow-id="runtime-to-agents:forward"] .agent-flow-packet--head',
+    )?.getAttribute("d")).toMatch(/^M 386 412 L 402 412/);
+    expect(star?.querySelector(
+      '[data-flow-id="runtime-to-agents:return"] .agent-flow-packet--head',
+    )?.getAttribute("d")).toMatch(/L 386 436$/);
   });
 
-  it("runs, fails, retries, and recovers as separate attempts", () => {
+  it("shows each failed call and retry as a separate attempt", () => {
     setLocation("/demos/agent-orchestration/recover");
-    render(<AgentDemo />);
+    const { container } = renderAgentDemo();
+    const map = screen.getByRole("region", { name: "Interactive AI agent system map" });
 
-    const map = screen.getByRole("region", { name: "Agent architecture map" });
-    const attempts = screen.getByRole("region", { name: "Recovery attempt history" });
-    expect(map).toHaveAttribute("data-trace-state", "progress");
-    expect(screen.getByText("Attempt 1 is still running. No result exists yet.")).toBeInTheDocument();
-    expect(within(attempts).getByText("Running broad query")).toBeInTheDocument();
-    expect(within(attempts).getByText("Waiting for re-plan")).toBeInTheDocument();
-    expect(map.querySelector('[data-edge-id="logs-agent-to-mcp"]')).toHaveAttribute(
-      "data-state",
-      "active",
-    );
+    expect(map).toHaveAttribute("data-topology", "retry");
+    expect(map).toHaveAttribute("data-lesson-state", "active");
+    expect(screen.getByText("Attempt 1 · request")).toBeInTheDocument();
+    expect(screen.getByText("Waiting")).toBeInTheDocument();
+    expect(container.querySelector(
+      '[data-relationship-id="agents-to-tools"] [data-direction="forward"]',
+    )).toHaveAttribute("data-state", "active");
 
     fireEvent.click(screen.getByRole("button", { name: "Next animation step" }));
-
-    expect(map).toHaveAttribute("data-trace-state", "failed");
-    expect(
-      screen.getByText("Failed observation. Nothing continues as a result."),
-    ).toBeInTheDocument();
-    expect(map.querySelector('[data-edge-id="logs-agent-to-mcp"]')).toHaveAttribute(
-      "data-state",
-      "failed",
-    );
-    expect(map.querySelector('[data-node-id="logs-mcp"]')).toHaveAttribute(
-      "data-state",
-      "failed",
-    );
-    expect(screen.getByText("Attempt 1 ended · no result advanced")).toBeInTheDocument();
-    expect(within(attempts).getByText("Failed · timeout")).toBeInTheDocument();
-
-    fireEvent.click(
-      screen.getAllByRole("button", { name: "Learn about Logs MCP" })[0]!,
-    );
-    let dialog = screen.getByRole("dialog", { name: "Logs MCP" });
-    expect(within(dialog).getByText("Attempt 1 · failed")).toBeInTheDocument();
-    expect(within(dialog).queryByText(/Attempt 2/)).not.toBeInTheDocument();
-    fireEvent.keyDown(document, { key: "Escape" });
+    expect(map).toHaveAttribute("data-lesson-state", "failed");
+    expect(screen.getByText("Attempt 1 · timed out")).toBeInTheDocument();
+    expect(screen.getByText("Timed out")).toBeInTheDocument();
+    expect(screen.getAllByText(/deadline expired with no result/i).length)
+      .toBeGreaterThan(0);
+    expect(container.querySelector('[data-timeout-endpoint="tools"]'))
+      .toBeInTheDocument();
+    expect(container.querySelector(
+      '[data-relationship-id="agents-to-tools"] [data-direction="forward"]',
+    )).toHaveAttribute("data-state", "failed");
+    expect(container.querySelector(
+      '[data-relationship-id="agents-to-tools"] path[data-direction="forward"]',
+    )).toHaveAttribute("marker-end", "url(#agent-arrow-failed)");
+    expect(container.querySelector('[data-flow-id="agents-to-tools:return"]'))
+      .not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Next animation step" }));
-    fireEvent.click(screen.getByRole("button", { name: "Next animation step" }));
-
-    expect(map).toHaveAttribute("data-trace-state", "retry");
-    expect(
-      screen.getByText("New attempt. The failed call remains separate."),
-    ).toBeInTheDocument();
-    expect(map.querySelector('[data-edge-id="logs-agent-to-mcp"]')).toHaveAttribute(
-      "data-state",
-      "retry",
-    );
-    expect(screen.getByText("Attempt 2 · separate bounded call running")).toBeInTheDocument();
-    expect(within(attempts).getByText("Running narrow query")).toBeInTheDocument();
-
-    fireEvent.click(
-      screen.getAllByRole("button", { name: "Learn about Logs MCP" })[0]!,
-    );
-    dialog = screen.getByRole("dialog", { name: "Logs MCP" });
-    expect(within(dialog).getByText("Attempt 1 · failed")).toBeInTheDocument();
-    expect(within(dialog).queryByText("Attempt 2 · recovered")).not.toBeInTheDocument();
-    fireEvent.keyDown(document, { key: "Escape" });
+    expect(map).toHaveAttribute("data-lesson-state", "retry");
+    expect(screen.getByText("Attempt 2 · request")).toBeInTheDocument();
+    expect(screen.getByText("Timed out")).toBeInTheDocument();
+    expect(container.querySelector('[data-timeout-endpoint="tools"]'))
+      .not.toBeInTheDocument();
+    expect(container.querySelector(
+      '[data-relationship-id="agents-to-tools"] [data-direction="forward"]',
+    )).toHaveAttribute("data-state", "retry");
 
     fireEvent.click(screen.getByRole("button", { name: "Next animation step" }));
-
-    expect(map).toHaveAttribute("data-trace-state", "recovered");
-    expect(screen.getByText("Attempt 2 succeeded. Evidence can now advance.")).toBeInTheDocument();
-    expect(map.querySelector('[data-edge-id="logs-agent-to-mcp"]')).toHaveAttribute(
-      "data-state",
-      "recovered",
-    );
-    expect(screen.getByText("Attempt 2 succeeded · evidence returned")).toBeInTheDocument();
-    expect(within(attempts).getByText("Succeeded · evidence returned")).toBeInTheDocument();
-
-    fireEvent.click(
-      screen.getAllByRole("button", { name: "Learn about Logs MCP" })[0]!,
-    );
-    dialog = screen.getByRole("dialog", { name: "Logs MCP" });
-    expect(within(dialog).getByText("Attempt 1 · failed")).toBeInTheDocument();
-    expect(within(dialog).getByText("Attempt 2 · recovered")).toBeInTheDocument();
+    expect(map).toHaveAttribute("data-lesson-state", "recovered");
+    expect(screen.getByText("Attempt 2 · returned")).toBeInTheDocument();
+    expect(container.querySelector(
+      '[data-relationship-id="agents-to-tools"] [data-direction="return"]',
+    )).toHaveAttribute("data-state", "recovered");
+    expect(container.querySelector(
+      '[data-relationship-id="agents-to-tools"] path[data-direction="return"]',
+    )).toHaveAttribute("marker-end", "url(#agent-arrow-recovered)");
   });
 
-  it("stops Recover after the successful evidence is reconciled", () => {
+  it("closes the governance loop before a bounded action and outcome fan-out", () => {
+    setLocation("/demos/agent-orchestration/govern");
+    const { container } = renderAgentDemo();
+    const map = screen.getByRole("region", { name: "Interactive AI agent system map" });
+
+    expect(map).toHaveAttribute("data-topology", "sequence");
+    fireEvent.click(screen.getByRole("button", { name: "Next animation step" }));
+    expect(map).toHaveAttribute("data-topology", "cycle");
+    for (const relationshipId of [
+      "agents-to-governance",
+      "governance-to-runtime",
+      "runtime-to-agents",
+    ]) {
+      expect(container.querySelector(
+        `[data-relationship-id="${relationshipId}"] [data-active="true"]`,
+      )).toBeInTheDocument();
+    }
+    expect(container.querySelector('[data-flow-id="agents-to-governance:forward"]'))
+      .toHaveAttribute("data-flow-phase", "0");
+    expect(container.querySelector('[data-flow-id="governance-to-runtime:forward"]'))
+      .toHaveAttribute("data-flow-phase", "1");
+    expect(container.querySelector('[data-flow-id="runtime-to-agents:forward"]'))
+      .toHaveAttribute("data-flow-phase", "2");
+    expect(within(map).getByText(/closes the loop/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Approve remediation/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Next animation step" }));
+    expect(map).toHaveAttribute("data-topology", "sequence");
+    fireEvent.click(screen.getByRole("button", { name: "Next animation step" }));
+    expect(map).toHaveAttribute("data-topology", "fan-out");
+    expect(within(map).getByText("Outcome fan-out")).toBeInTheDocument();
+    expect(container.querySelector('[data-flow-id="outcome-to-context:forward"]'))
+      .toHaveAttribute("data-flow-phase", "0");
+    expect(container.querySelector('[data-flow-id="outcome-to-entry:forward"]'))
+      .toHaveAttribute("data-flow-phase", "0");
+    expect(screen.getByRole("button", { name: "Inspect Trace & telemetry" }))
+      .toHaveAttribute("data-active", "true");
+  });
+
+  it("opens component details as an accessible mobile bottom sheet", () => {
+    mockMobileViewport();
+    renderAgentDemo();
+    const trigger = screen.getByRole("button", { name: "Inspect Input gateway" });
+
+    trigger.focus();
+    fireEvent.click(trigger);
+
+    const dialog = screen.getByRole("dialog", { name: "Input gateway" });
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(within(dialog).getByRole("button", { name: "Close component details" }))
+      .toHaveFocus();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+  });
+
+  it("stops the recovery lesson after its accepted result", () => {
     vi.useFakeTimers();
     setLocation("/demos/agent-orchestration/recover");
-    render(<AgentDemo />);
-
+    renderAgentDemo();
     fireEvent.click(screen.getByRole("button", { name: "Play animation" }));
 
-    for (const durationMs of [12_000, 6_000, 8_000, 14_000, 10_000, 12_000, 13_000]) {
+    for (const durationMs of [8_000, 8_000, 8_000, 8_000]) {
       act(() => vi.advanceTimersByTime(durationMs));
     }
 
-    const attempts = screen.getByRole("region", { name: "Recovery attempt history" });
-    const map = screen.getByRole("region", { name: "Agent architecture map" });
     const playButton = screen.getByRole("button", { name: "Play animation" });
     expect(playButton).toHaveTextContent("Replay");
-    expect(map).toHaveTextContent("Run output quality gate");
-    expect(within(attempts).getByText("Failed · timeout")).toBeInTheDocument();
-    expect(within(attempts).getByText("Succeeded · evidence returned")).toBeInTheDocument();
-
+    expect(screen.getByText("Attempt 2 · returned")).toBeInTheDocument();
     act(() => vi.advanceTimersByTime(30_000));
-
     expect(playButton).toHaveTextContent("Replay");
-    expect(map).toHaveTextContent("Run output quality gate");
-  });
-
-  it("pauses at the primary approval gate and blocks playback shortcuts", () => {
-    vi.useFakeTimers();
-    setLocation("/demos/agent-orchestration/govern");
-    render(<AgentDemo />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Play animation" }));
-    act(() => vi.advanceTimersByTime(14_000));
-
-    expect(screen.getByRole("button", { name: "Approve remediation" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Play animation" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Next animation step" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /Skip page/ })).toBeDisabled();
-  });
-
-  it("executes Cloud Control actions only after primary approval", () => {
-    vi.useFakeTimers();
-    setLocation("/demos/agent-orchestration/govern");
-    render(<AgentDemo />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Play animation" }));
-    act(() => vi.advanceTimersByTime(14_000));
-    fireEvent.click(screen.getByRole("button", { name: "Approve remediation" }));
-
-    expect(screen.getByRole("heading", { name: "Cloud Control actions complete" })).toBeInTheDocument();
-    expect(screen.getByText(/Scale checkout workers from 6 to 10/)).toBeInTheDocument();
-  });
-
-  it("builds a safer plan, asks again, and can stop without action", () => {
-    vi.useFakeTimers();
-    setLocation("/demos/agent-orchestration/govern");
-    render(<AgentDemo />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Play animation" }));
-    act(() => vi.advanceTimersByTime(14_000));
-    fireEvent.click(screen.getByRole("button", { name: "Request safer canary" }));
-
-    expect(screen.getByRole("heading", { name: "Use a rolling canary" })).toBeInTheDocument();
-    act(() => vi.advanceTimersByTime(16_000));
-    expect(screen.getByRole("button", { name: "Approve safer plan" })).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Stop without acting" }));
-    expect(screen.getByRole("heading", { name: "No external action" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Use a rolling canary" })).toBeInTheDocument();
   });
 });

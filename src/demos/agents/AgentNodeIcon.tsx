@@ -1,47 +1,69 @@
 import {
+  Activity,
   Bot,
+  Braces,
   BrainCircuit,
   CheckCircle2,
   Database,
-  FileSearch,
+  GitBranch,
   MessageSquareText,
   RefreshCw,
+  Search,
+  Send,
   Server,
   ShieldCheck,
+  UserRound,
   UserRoundCheck,
+  Workflow,
+  Zap,
+  BookOpenCheck,
 } from "lucide-react";
 
-import type { ArchitectureNodeKind } from "./agent-types";
+import type { AgentComponentKind } from "./agent-types";
 
 export function AgentNodeIcon({
   kind,
 }: {
-  readonly kind: ArchitectureNodeKind;
+  readonly kind: AgentComponentKind;
 }): React.JSX.Element {
   switch (kind) {
-    case "channel":
+    case "user":
+      return <UserRound aria-hidden="true" />;
+    case "event":
       return <MessageSquareText aria-hidden="true" />;
     case "gateway":
+    case "policy":
       return <ShieldCheck aria-hidden="true" />;
-    case "orchestrator":
-    case "model":
-      return <BrainCircuit aria-hidden="true" />;
+    case "coordinator":
+      return <Workflow aria-hidden="true" />;
+    case "scheduler":
+      return <GitBranch aria-hidden="true" />;
+    case "context":
+    case "context-manager":
+      return <RefreshCw aria-hidden="true" />;
     case "memory":
       return <Database aria-hidden="true" />;
-    case "skill":
-    case "rag":
-      return <FileSearch aria-hidden="true" />;
-    case "compactor":
-      return <RefreshCw aria-hidden="true" />;
-    case "agent":
+    case "skills":
+      return <BookOpenCheck aria-hidden="true" />;
+    case "model":
+      return <BrainCircuit aria-hidden="true" />;
+    case "worker":
       return <Bot aria-hidden="true" />;
-    case "mcp":
+    case "function-tool":
+      return <Braces aria-hidden="true" />;
+    case "retrieval":
+      return <Search aria-hidden="true" />;
+    case "data":
       return <Server aria-hidden="true" />;
-    case "hook":
-      return <ShieldCheck aria-hidden="true" />;
+    case "action":
+      return <Zap aria-hidden="true" />;
+    case "evaluator":
+      return <CheckCircle2 aria-hidden="true" />;
     case "approval":
       return <UserRoundCheck aria-hidden="true" />;
-    case "outcome":
-      return <CheckCircle2 aria-hidden="true" />;
+    case "publisher":
+      return <Send aria-hidden="true" />;
+    case "telemetry":
+      return <Activity aria-hidden="true" />;
   }
 }

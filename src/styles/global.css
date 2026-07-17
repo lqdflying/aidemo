@@ -92,6 +92,10 @@ input:focus-visible {
   width: min(100% - 40px, 1440px);
 }
 
+.app-shell--agents {
+  width: min(100% - 24px, 1520px);
+}
+
 .site-header {
   display: flex;
   align-items: center;

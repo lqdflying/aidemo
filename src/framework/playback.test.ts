@@ -99,5 +99,16 @@ describe("playback reducer", () => {
       eventIndex: 0,
       status: "completed",
     });
+
+    expect(
+      reducer(createInitialPlaybackState(), {
+        type: "skip",
+        autoplay: true,
+      }),
+    ).toMatchObject({
+      sceneIndex: 1,
+      eventIndex: 0,
+      status: "playing",
+    });
   });
 });

@@ -37,6 +37,11 @@ Harbor enforces Cosign content trust — every published image MUST be signed be
 - **Testing builds use formal patch tags + latest**: do NOT push ad-hoc tags such as `test-*` for user testing. Publish the next unused full-semver patch tag instead and always tag/push `latest` to the same digest so testers who pull `latest` receive the newest test image.
 - **GA is user-gated**: after a formal patch image is built and pushed for testing, wait for the user to explicitly say "GA" before committing/pushing code or doc changes. On GA, create and push the Git tag that matches the tested full-semver Docker image tag exactly (image `0.1.0` -> Git tag `v0.1.0`; never tag from `latest`).
 
+## Build Requests Automatically Publish
+- **A user request to build, create, or prepare a new release image also authorizes the complete Harbor publication workflow.** After the validation gate passes and the image is built, immediately push the full-semver, minor, major, and `latest` tags; sign the resulting digest with Cosign; verify the signature; and wait for the Harbor vulnerability scan result. Do not pause for a second push confirmation.
+- If the user explicitly requests a **local-only**, **build-only**, or **do-not-push** image, stop after local container and browser validation and do not publish.
+- Automatic image publication does **not** authorize a Git commit, branch push, Git tag, or GA declaration. Those remain separately user-gated by the GA rule.
+
 ## Base Images — Always Pull Latest
 The `Dockerfile` uses Wolfi base images from the internal 0-CVE registry:
 - `img.aksg.net/nodejs/nodejs:latest` (Node 24 + npm, build stage)

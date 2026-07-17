@@ -1,322 +1,217 @@
 import type { DemoRuntimeAdapter, DemoRuntimeResult } from "../../framework/types";
 
 export type AgentEventKind =
-  | "map-system"
-  | "show-state-ownership"
-  | "show-engineered-loop"
-  | "show-trace-contract"
-  | "receive-incident"
-  | "run-input-hooks"
+  | "map-components"
+  | "show-harness"
+  | "accept-input"
   | "assemble-context"
-  | "select-model"
-  | "compact-context"
-  | "classify-incident"
-  | "decompose-dag"
-  | "dispatch-specialists"
-  | "establish-handoffs"
-  | "query-metrics"
-  | "query-logs"
-  | "retrieve-runbook"
-  | "share-observations"
-  | "block-remediation"
-  | "run-broad-log-query"
-  | "detect-tool-failure"
-  | "preserve-completed-work"
-  | "retry-narrow-query"
-  | "complete-log-retry"
-  | "reconcile-evidence"
-  | "evaluate-output"
-  | "assemble-remediation"
-  | "await-approval"
-  | "revise-remediation"
-  | "await-reapproval"
-  | "execute-decision"
-  | "verify-recovery"
-  | "persist-outcome";
-
-export type AgentApprovalState =
-  | "pending-primary"
-  | "safer-requested"
-  | "pending-safer"
-  | "approved-primary"
-  | "approved-safer"
-  | "stopped"
-  | "stopped-safer";
+  | "call-model"
+  | "delegate-workers"
+  | "call-function-tool"
+  | "retrieve-knowledge"
+  | "start-tool-attempt"
+  | "record-tool-failure"
+  | "retry-tool-call"
+  | "accept-tool-result"
+  | "review-decision"
+  | "close-revision-loop"
+  | "allow-bounded-action"
+  | "publish-outcome";
 
 export type AgentAccent = "input" | "generation" | "retrieval" | "evidence";
-export type AgentEngineeringConcept = "harness" | "loop";
-export type AgentHarnessFacetId =
-  | "intent-skills"
-  | "context-memory"
-  | "tools-isolation"
-  | "policy-authority"
-  | "trace-evaluation";
-export type AgentLoopStage =
-  | "observe"
-  | "decide"
-  | "act"
-  | "evaluate"
-  | "adapt-exit";
-export type AgentLoopPass =
-  | "system-framing"
-  | "investigation-1"
-  | "investigation-2"
-  | "remediation";
-export type ArchitectureZone =
+
+export type AgentGroupId =
   | "entry"
   | "runtime"
   | "context"
   | "models"
   | "agents"
   | "tools"
-  | "governance";
-
-export type ArchitectureNodeId =
-  | "incident-channel"
-  | "human-approver"
-  | "input-gateway"
-  | "orchestrator"
-  | "session-context"
-  | "global-memory"
-  | "skills-library"
-  | "context-compactor"
-  | "remote-llm"
-  | "local-llm"
-  | "metrics-agent"
-  | "logs-agent"
-  | "runbook-agent"
-  | "remediation-agent"
-  | "metrics-mcp"
-  | "logs-mcp"
-  | "knowledge-rag"
-  | "cloud-control-mcp"
-  | "output-hooks"
-  | "verified-outcome";
-
-export type ArchitectureNodeKind =
-  | "channel"
-  | "gateway"
-  | "orchestrator"
-  | "memory"
-  | "skill"
-  | "compactor"
-  | "model"
-  | "agent"
-  | "mcp"
-  | "rag"
-  | "hook"
-  | "approval"
+  | "governance"
   | "outcome";
 
-export type ArchitectureFlowKind =
-  | "request"
+export type AgentComponentId =
+  | "user-application"
+  | "event-message"
+  | "input-gateway"
+  | "coordinator"
+  | "task-scheduler"
+  | "working-context"
+  | "long-term-memory"
+  | "skills-instructions"
+  | "context-manager"
+  | "general-model"
+  | "private-model"
+  | "worker-a"
+  | "worker-b"
+  | "worker-c"
+  | "function-tool"
+  | "retrieval-tool"
+  | "data-source"
+  | "action-tool"
+  | "policy-guard"
+  | "output-evaluator"
+  | "human-approval"
+  | "response-publisher"
+  | "memory-writer"
+  | "trace-telemetry";
+
+export type AgentComponentKind =
+  | "user"
+  | "event"
+  | "gateway"
+  | "coordinator"
+  | "scheduler"
   | "context"
+  | "memory"
+  | "skills"
+  | "context-manager"
   | "model"
-  | "handoff"
-  | "tool"
+  | "worker"
+  | "function-tool"
+  | "retrieval"
+  | "data"
+  | "action"
+  | "policy"
+  | "evaluator"
   | "approval"
-  | "memory";
+  | "publisher"
+  | "telemetry";
 
-export interface CloudOpsIncident {
-  readonly id: "checkout-latency";
-  readonly title: string;
-  readonly alert: string;
-  readonly service: string;
-  readonly severity: "SEV-2";
-  readonly metrics: readonly { readonly label: string; readonly value: string }[];
+export type AgentConceptId = "harness" | "run-loop" | "typed-contracts";
+
+export type AgentTopologyKind =
+  | "system"
+  | "sequence"
+  | "pair-loop"
+  | "star"
+  | "cycle"
+  | "retry"
+  | "fan-out";
+
+export type AgentLessonState = "active" | "failed" | "retry" | "recovered";
+export type AgentContractDirection = "forward" | "return";
+export type AgentFlowTone = "request" | "response";
+export type AgentAttemptStatus = "waiting" | "running" | "timed-out" | "returned";
+export type AgentLoopKind =
+  | "request-response"
+  | "state-feedback"
+  | "control-verification";
+
+export type AgentRelationshipId =
+  | "entry-to-runtime"
+  | "runtime-to-context"
+  | "runtime-to-models"
+  | "runtime-to-agents"
+  | "agents-to-tools"
+  | "agents-to-governance"
+  | "governance-to-runtime"
+  | "governance-to-tools"
+  | "governance-to-outcome"
+  | "tools-to-outcome"
+  | "outcome-to-context"
+  | "outcome-to-entry";
+
+export interface AgentContractLeg {
+  readonly relationshipId: AgentRelationshipId;
+  readonly direction: AgentContractDirection;
 }
 
-export interface ArchitectureNode {
-  readonly id: ArchitectureNodeId;
-  readonly label: string;
-  readonly shortLabel: string;
-  readonly description: string;
-  readonly zone: ArchitectureZone;
-  readonly kind: ArchitectureNodeKind;
-  readonly accent: AgentAccent;
-  readonly firstTraceStep: number;
-  readonly learning: ArchitectureLearningDetail;
-}
-
-export interface ArchitectureLearningDetail {
-  readonly purpose: string;
-  readonly stateAndAuthority: string;
-  readonly designRationale: string;
+export interface AgentLearningDetail {
+  readonly role: string;
+  readonly receives: string;
+  readonly returns: string;
+  readonly owns: string;
+  readonly engineeringNote: string;
   readonly risk: string;
 }
 
-export interface ArchitectureZoneLearningDetail extends ArchitectureLearningDetail {
+export interface AgentComponent {
+  readonly id: AgentComponentId;
+  readonly groupId: AgentGroupId;
+  readonly label: string;
+  readonly shortLabel: string;
+  readonly kind: AgentComponentKind;
+  readonly accent: AgentAccent;
+  readonly learning: AgentLearningDetail;
+}
+
+export interface AgentComponentGroup {
+  readonly id: AgentGroupId;
+  readonly label: string;
+  readonly shortLabel: string;
+  readonly summary: string;
+  readonly accent: AgentAccent;
+  readonly componentIds: readonly AgentComponentId[];
+  readonly learning: AgentLearningDetail;
+}
+
+interface AgentRelationshipBase {
+  readonly id: AgentRelationshipId;
+  readonly sourceGroupId: AgentGroupId;
+  readonly targetGroupId: AgentGroupId;
+  readonly label: string;
+  readonly forwardTone: AgentFlowTone;
+}
+
+export type AgentRelationship = AgentRelationshipBase & (
+  | {
+      readonly interaction: "handoff";
+      readonly loopKind?: never;
+      readonly returnLabel?: never;
+      readonly returnTone?: never;
+    }
+  | {
+      readonly interaction: "exchange";
+      readonly loopKind: Exclude<AgentLoopKind, "control-verification">;
+      readonly returnLabel: string;
+      readonly returnTone: AgentFlowTone;
+    }
+);
+
+export interface AgentControlCycle {
+  readonly id: "governance-revision-cycle";
+  readonly label: string;
+  readonly loopKind: "control-verification";
+  readonly legs: readonly AgentContractLeg[];
+}
+
+export interface AgentConcept {
+  readonly id: AgentConceptId;
   readonly label: string;
   readonly summary: string;
+  readonly learning: AgentLearningDetail;
 }
 
-export type AgentDetailTarget =
-  | { readonly kind: "node"; readonly nodeId: ArchitectureNodeId }
-  | { readonly kind: "zone"; readonly zone: ArchitectureZone }
-  | {
-      readonly kind: "concept";
-      readonly concept: AgentEngineeringConcept;
-    };
-
-export interface ArchitectureEdge {
-  readonly id: string;
-  readonly sourceId: ArchitectureNodeId;
-  readonly targetId: ArchitectureNodeId;
-  readonly label: string;
-  readonly kind: ArchitectureFlowKind;
-  readonly firstTraceStep: number;
-}
-
-export interface AgentModelEndpoint {
-  readonly id: string;
-  readonly label: string;
-  readonly location: "remote" | "local";
-  readonly stateless: true;
-  readonly purpose: string;
-}
-
-export interface AgentSkill {
-  readonly id: string;
-  readonly label: string;
-  readonly purpose: string;
-}
-
-export interface SpecialistAgent {
-  readonly id: string;
-  readonly name: string;
-  readonly role: string;
-  readonly accent: AgentAccent;
-  readonly modelEndpointId: string;
-  readonly skillIds: readonly string[];
-  readonly workingMemory: string;
-  readonly toolServerIds: readonly string[];
-}
-
-export interface AgentTask {
-  readonly id: string;
-  readonly title: string;
-  readonly ownerId: string;
-  readonly dependsOn: readonly string[];
-  readonly status: "planned" | "complete" | "recovered";
-}
-
-export interface McpServer {
-  readonly id: string;
-  readonly label: string;
-  readonly access: "read" | "read-write";
-  readonly tools: readonly string[];
-  readonly authorization: string;
-}
-
-export interface AgentToolObservation {
-  readonly id: string;
-  readonly ownerId: string;
-  readonly serverId: string;
-  readonly input: string;
-  readonly output: string;
-  readonly provenance: string;
-  readonly status: "success" | "failed" | "recovered";
-}
-
-export interface AgentMemoryStore {
-  readonly id: string;
-  readonly label: string;
-  readonly scope: "session" | "global";
-  readonly owner: "gateway";
-  readonly retention: string;
-  readonly entries: readonly string[];
-}
-
-export interface AgentPolicyHook {
-  readonly id: string;
-  readonly label: string;
-  readonly phase: "input" | "action" | "output";
-  readonly checks: readonly string[];
-}
-
-export interface AgentTraceStep {
+export interface AgentLessonStep {
   readonly number: number;
   readonly eventKind: AgentEventKind;
   readonly label: string;
-  readonly packet: string;
-  readonly nodeIds: readonly ArchitectureNodeId[];
-  readonly edgeIds: readonly string[];
-  readonly loopStage: AgentLoopStage;
-  readonly loopPass: AgentLoopPass;
-  readonly state?: "failed" | "retry" | "recovered";
-}
-
-export interface AgentHarnessFacet {
-  readonly id: AgentHarnessFacetId;
-  readonly label: string;
   readonly summary: string;
-  readonly nodeIds: readonly ArchitectureNodeId[];
+  readonly topology: AgentTopologyKind;
+  readonly patternLabel: string;
+  readonly activeComponentIds: readonly AgentComponentId[];
+  readonly contractLegs: readonly AgentContractLeg[];
+  readonly state: AgentLessonState;
+  readonly attempt?: 1 | 2;
+  readonly attemptStatuses?: readonly [AgentAttemptStatus, AgentAttemptStatus];
+  readonly focusTarget?: AgentDetailTarget;
 }
 
-export interface AgentLoopStageDefinition {
-  readonly id: AgentLoopStage;
-  readonly label: string;
-  readonly purpose: string;
+export type AgentDetailTarget =
+  | { readonly kind: "component"; readonly componentId: AgentComponentId }
+  | { readonly kind: "group"; readonly groupId: AgentGroupId }
+  | { readonly kind: "concept"; readonly conceptId: AgentConceptId };
+
+export interface AgentArchitectureModel {
+  readonly groups: readonly AgentComponentGroup[];
+  readonly components: readonly AgentComponent[];
+  readonly relationships: readonly AgentRelationship[];
+  readonly cycles: readonly AgentControlCycle[];
+  readonly concepts: readonly AgentConcept[];
+  readonly trace: readonly AgentLessonStep[];
 }
 
-export interface AgentLoopPolicy {
-  readonly objective: string;
-  readonly stages: readonly AgentLoopStageDefinition[];
-  readonly retryBudget: string;
-  readonly completionCriteria: readonly string[];
-  readonly stopConditions: readonly string[];
-}
-
-export interface RemediationPlan {
-  readonly id: "primary" | "safer";
-  readonly title: string;
-  readonly summary: string;
-  readonly actions: readonly string[];
-  readonly risk: string;
-  readonly verificationWindow: string;
-}
-
-export interface AgentVerificationCheck {
-  readonly id: string;
-  readonly label: string;
-  readonly result: string;
-  readonly passed: boolean;
-}
-
-export interface AgentExternalAction {
-  readonly id: string;
-  readonly label: string;
-  readonly status: "simulated-complete";
-}
-
-export interface AgentSimulation {
-  readonly incident: CloudOpsIncident;
-  readonly nodes: readonly ArchitectureNode[];
-  readonly edges: readonly ArchitectureEdge[];
-  readonly trace: readonly AgentTraceStep[];
-  readonly models: readonly AgentModelEndpoint[];
-  readonly skills: readonly AgentSkill[];
-  readonly agents: readonly SpecialistAgent[];
-  readonly tasks: readonly AgentTask[];
-  readonly mcpServers: readonly McpServer[];
-  readonly observations: readonly AgentToolObservation[];
-  readonly memoryStores: readonly AgentMemoryStore[];
-  readonly hooks: readonly AgentPolicyHook[];
-  readonly harnessFacets: readonly AgentHarnessFacet[];
-  readonly loopPolicy: AgentLoopPolicy;
-  readonly primaryPlan: RemediationPlan;
-  readonly saferPlan: RemediationPlan;
-  readonly checks: readonly AgentVerificationCheck[];
-  readonly approvalState: AgentApprovalState;
-  readonly externalActions: readonly AgentExternalAction[];
-}
-
-export interface AgentRuntimeInput {
-  readonly approvalState: AgentApprovalState;
-}
-
-export type AgentRuntimeResult = DemoRuntimeResult<AgentSimulation>;
-export type AgentRuntimeAdapter = DemoRuntimeAdapter<
-  AgentRuntimeInput,
-  AgentRuntimeResult
->;
+export type AgentRuntimeInput = Readonly<Record<string, never>>;
+export type AgentRuntimeResult = DemoRuntimeResult<AgentArchitectureModel>;
+export type AgentRuntimeAdapter = DemoRuntimeAdapter<AgentRuntimeInput, AgentRuntimeResult>;

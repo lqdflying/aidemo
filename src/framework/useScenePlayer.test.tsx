@@ -82,7 +82,7 @@ describe("useScenePlayer", () => {
   it("wraps to the first event while loop playback remains active", () => {
     vi.useFakeTimers();
     const { result } = renderHook(() =>
-      useScenePlayer(story, { loop: true }),
+      useScenePlayer(story, { endBehavior: "loop" }),
     );
 
     act(() => result.current.controls.play());
@@ -91,6 +91,50 @@ describe("useScenePlayer", () => {
 
     act(() => vi.advanceTimersByTime(20));
     expect(result.current.position.eventNumber).toBe(1);
+    expect(result.current.state.status).toBe("playing");
+    vi.useRealTimers();
+  });
+
+  it("holds the final event while playback remains active", () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() =>
+      useScenePlayer(story, { endBehavior: "hold-final" }),
+    );
+
+    act(() => result.current.controls.play());
+    act(() => vi.advanceTimersByTime(20));
+    expect(result.current.position.eventNumber).toBe(2);
+    expect(result.current.state.status).toBe("playing");
+
+    act(() => vi.advanceTimersByTime(1_000));
+    expect(result.current.position.eventNumber).toBe(2);
+    expect(result.current.state.status).toBe("playing");
+
+    act(() => result.current.controls.pause());
+    expect(result.current.state.status).toBe("paused");
+    act(() => result.current.controls.play());
+    expect(result.current.state.status).toBe("playing");
+    act(() => vi.advanceTimersByTime(1_000));
+    expect(result.current.position.eventNumber).toBe(2);
+
+    act(() => result.current.controls.restart());
+    expect(result.current.position.eventNumber).toBe(1);
+    expect(result.current.state.status).toBe("idle");
+    vi.useRealTimers();
+  });
+
+  it("skips directly to a live final event in hold-final mode", () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() =>
+      useScenePlayer(story, { endBehavior: "hold-final" }),
+    );
+
+    act(() => result.current.controls.skip());
+
+    expect(result.current.position.eventNumber).toBe(2);
+    expect(result.current.state.status).toBe("playing");
+    act(() => vi.advanceTimersByTime(1_000));
+    expect(result.current.position.eventNumber).toBe(2);
     expect(result.current.state.status).toBe("playing");
     vi.useRealTimers();
   });

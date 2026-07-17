@@ -137,7 +137,7 @@ export function VectorDbDialog({
   const selectedRecord =
     simulation.vectorRecords.find((record) => record.id === selectedRecordId) ??
     simulation.vectorRecords[0];
-  const player = useScenePlayer(vectorDbStory, { loop: true });
+  const player = useScenePlayer(vectorDbStory, { endBehavior: "loop" });
   const playerControlsRef = useRef(player.controls);
 
   onCloseRef.current = onClose;

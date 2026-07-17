@@ -40,7 +40,9 @@ function RagPhaseWorkspace({
   runtimeResult,
   onNextPhase,
 }: RagPhaseWorkspaceProps): React.JSX.Element {
-  const player = useScenePlayer(ragPhaseStories[activePhase], { loop: true });
+  const player = useScenePlayer(ragPhaseStories[activePhase], {
+    endBehavior: "loop",
+  });
   const currentPhaseIndex = ragPhases.indexOf(activePhase);
   const nextPhase = ragPhases[currentPhaseIndex + 1];
   const nextPhaseLabel = nextPhase

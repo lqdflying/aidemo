@@ -16,12 +16,12 @@ export const agentPhases: readonly AgentPhase[] = [
 ];
 
 export const agentPhaseLabels: Readonly<Record<AgentPhase, string>> = {
-  overview: "Overview",
-  prepare: "Prepare",
-  route: "Route",
-  execute: "Execute",
-  recover: "Recover",
-  govern: "Govern",
+  overview: "System",
+  prepare: "Input + context",
+  route: "Models + agents",
+  execute: "Tools",
+  recover: "Evaluate + retry",
+  govern: "Govern + return",
 };
 
 const phaseByPathSuffix: Readonly<Record<string, AgentPhase>> = {

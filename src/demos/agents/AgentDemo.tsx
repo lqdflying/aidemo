@@ -20,9 +20,8 @@ import {
   navigateToAgentPhase,
   type AgentPhase,
 } from "./agent-routing";
-import { simulateAgentOrchestration } from "./agent-simulator";
+import { simulateAgentArchitecture } from "./agent-simulator";
 import { agentPhaseStories } from "./agent-story";
-import type { AgentApprovalState } from "./agent-types";
 
 interface AgentPhaseWorkspaceProps {
   readonly activePhase: AgentPhase;
@@ -38,82 +37,28 @@ function AgentPhaseWorkspace({
   activePhase,
   onNextPhase,
 }: AgentPhaseWorkspaceProps): React.JSX.Element {
-  const [approvalState, setApprovalState] =
-    useState<AgentApprovalState>("pending-primary");
   const story = agentPhaseStories[activePhase];
+  const stopsAfterLesson = activePhase === "recover" || activePhase === "govern";
+  const holdsFinalFlow = activePhase === "overview";
   const player = useScenePlayer(story, {
-    loop: activePhase !== "govern" && activePhase !== "recover",
+    endBehavior: holdsFinalFlow
+      ? "hold-final"
+      : stopsAfterLesson
+        ? "complete"
+        : "loop",
   });
-  const runtimeResult = useMemo(
-    () => simulateAgentOrchestration(approvalState),
-    [approvalState],
-  );
-  const eventKind = player.position.event.kind;
-  const isPrimaryGate =
-    eventKind === "await-approval" && approvalState === "pending-primary";
-  const isSaferGate =
-    eventKind === "await-reapproval" &&
-    (approvalState === "safer-requested" || approvalState === "pending-safer");
-  const isBlocked = isPrimaryGate || isSaferGate;
+  const runtimeResult = useMemo(() => simulateAgentArchitecture(), []);
   const currentPhaseIndex = agentPhases.indexOf(activePhase);
   const nextPhase = agentPhases[currentPhaseIndex + 1];
   const nextPhaseLabel = nextPhase
     ? `Next: ${agentPhaseLabels[nextPhase]}`
     : "Restart walkthrough";
 
-  useEffect(() => {
-    if (!isBlocked) return;
-
-    if (eventKind === "await-reapproval" && approvalState === "safer-requested") {
-      setApprovalState("pending-safer");
+  const handleNext = (): void => {
+    if (holdsFinalFlow) {
+      player.controls.pause();
     }
-
-    player.controls.pause();
-  }, [approvalState, eventKind, isBlocked, player.controls]);
-
-  const handleRestart = (): void => {
-    setApprovalState("pending-primary");
-    player.controls.restart(false);
-  };
-
-  const handleSkip = (): void => {
-    if (activePhase !== "govern") {
-      player.controls.skip();
-      return;
-    }
-
-    if (approvalState === "pending-primary" && player.state.sceneIndex < 1) {
-      player.controls.goToScene(1, false);
-      return;
-    }
-
-    if (approvalState === "safer-requested" && player.state.sceneIndex < 3) {
-      setApprovalState("pending-safer");
-      player.controls.goToScene(3, false);
-      return;
-    }
-
-    player.controls.skip();
-  };
-
-  const handlePrevious = (): void => {
-    if (
-      activePhase === "govern" &&
-      player.state.sceneIndex === 4 &&
-      player.state.eventIndex === 0
-    ) {
-      if (approvalState === "approved-safer") {
-        setApprovalState("pending-safer");
-        player.controls.goToScene(3, false);
-        return;
-      }
-
-      setApprovalState("pending-primary");
-      player.controls.goToScene(1, false);
-      return;
-    }
-
-    player.controls.previous();
+    player.controls.next();
   };
 
   return (
@@ -121,61 +66,37 @@ function AgentPhaseWorkspace({
       <WalkthroughProgress progressPercent={player.progressPercent} />
       <div className="walkthrough-workspace__main">
         <AgentStage
-          approvalState={approvalState}
-          onApprovePrimary={() => {
-            setApprovalState("approved-primary");
-            player.controls.goToScene(4, true);
-          }}
-          onApproveSafer={() => {
-            setApprovalState("approved-safer");
-            player.controls.goToScene(4, true);
-          }}
-          onLearningOpen={player.controls.pause}
-          onRequestSafer={() => {
-            setApprovalState("safer-requested");
-            player.controls.goToScene(2, true);
-          }}
-          onStop={() => {
-            setApprovalState(
-              approvalState === "pending-safer" ? "stopped-safer" : "stopped",
-            );
-            player.controls.goToScene(4, true);
-          }}
+          model={runtimeResult.data}
+          onInspect={player.controls.pause}
           phase={activePhase}
           playbackStatus={player.state.status}
           position={player.position}
-          simulation={runtimeResult.data}
         />
         <WalkthroughExplanation
           adapterMode={runtimeResult.adapterMode}
           event={player.position.event}
-          footerLabel={isBlocked ? "Human decision required" : "Follow the packet"}
+          footerLabel="Read the topology"
         />
       </div>
       <WalkthroughControls
-        blockedReason={isBlocked ? "Approval required" : undefined}
         canGoNext={player.canGoNext}
         canGoPrevious={player.canGoPrevious}
-        loopLabel={
-          activePhase === "recover"
-            ? "Stops after recovery"
-            : activePhase === "govern"
-              ? "Human-gated"
-              : "Architecture loop"
-        }
-        loopTitle={
-          activePhase === "recover"
-            ? "This page stops after recovered evidence is reconciled"
-            : activePhase === "govern"
-              ? "This page pauses at human approval boundaries"
-              : "This page restarts after its final step"
-        }
+        loopLabel={holdsFinalFlow
+          ? "Final flow stays live"
+          : stopsAfterLesson
+            ? "Stops after this lesson"
+            : "Guided lesson loop"}
+        loopTitle={holdsFinalFlow
+          ? "The group tour runs once, then the full system flow continues until paused or restarted"
+          : stopsAfterLesson
+            ? "This lesson stops after its final step"
+            : "This lesson restarts after its final step"}
         nextPhaseLabel={nextPhaseLabel}
-        onNext={player.controls.next}
+        onNext={handleNext}
         onNextPhase={onNextPhase}
-        onPrevious={handlePrevious}
-        onRestart={handleRestart}
-        onSkip={handleSkip}
+        onPrevious={player.controls.previous}
+        onRestart={() => player.controls.restart(false)}
+        onSkip={player.controls.skip}
         onSpeedChange={player.controls.setSpeed}
         onToggle={player.controls.toggle}
         speed={player.state.speed}
@@ -214,27 +135,34 @@ export function AgentDemo(): React.JSX.Element {
             <ArrowLeft aria-hidden="true" size={18} />All demos
           </InternalLink>
           <div className="walkthrough-hero__title">
-            <p className="eyebrow">Interactive systems atlas</p>
-            <h1>See the complete AI agent system at work.</h1>
+            <p className="eyebrow">Interactive architecture explorer</p>
+            <h1>How AI agents work(designing)</h1>
           </div>
         </div>
         <div className="walkthrough-hero__summary">
           <div aria-hidden="true"><Network /><span /><BrainCircuit /><span /><ShieldCheck /></div>
           <p>
-            Trace one CloudOps incident through an engineered harness and a
-            bounded observe-decide-act-evaluate loop, from evidence to human authority.
+            Learn the reusable components of an AI agent system, then follow
+            each sequence, exchange, loop, retry, and governed outcome.
           </p>
         </div>
       </section>
 
-      <section className="walkthrough-workspace agent-workspace" aria-label="Agent orchestration animation workspace">
+      <section
+        aria-label="AI agent architecture learning workspace"
+        className="walkthrough-workspace agent-workspace"
+      >
         <WalkthroughTimeline
           activePhase={activePhase}
-          ariaLabel="Agent orchestration walkthrough pages"
+          ariaLabel="AI agent system lessons"
           onSelectPhase={(phase) => navigateToAgentPhase(phase)}
           phases={timelinePhases}
         />
-        <AgentPhaseWorkspace activePhase={activePhase} key={activePhase} onNextPhase={handleNextPhase} />
+        <AgentPhaseWorkspace
+          activePhase={activePhase}
+          key={activePhase}
+          onNextPhase={handleNextPhase}
+        />
       </section>
     </main>
   );

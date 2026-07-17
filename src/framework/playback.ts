@@ -22,7 +22,7 @@ export type PlaybackAction =
   | { readonly type: "previous" }
   | { readonly type: "restart"; readonly autoplay?: boolean }
   | { readonly type: "complete" }
-  | { readonly type: "skip" }
+  | { readonly type: "skip"; readonly autoplay?: boolean }
   | { readonly type: "set-speed"; readonly speed: PlaybackSpeed }
   | { readonly type: "set-reduced-motion"; readonly reducedMotion: boolean }
   | {
@@ -112,7 +112,10 @@ export function createPlaybackReducer<EventKind extends string>(
           ...state,
           sceneIndex: finalSceneIndex,
           eventIndex: finalScene.events.length - 1,
-          status: "completed",
+          status:
+            action.type === "skip" && action.autoplay
+              ? "playing"
+              : "completed",
         };
       }
 

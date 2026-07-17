@@ -54,8 +54,11 @@ export function App(): React.JSX.Element {
 
   if (currentDemo) {
     const CurrentDemo = currentDemo.component;
+    const shellClassName = currentDemo.id === "agent-orchestration"
+      ? "app-shell app-shell--demo app-shell--agents"
+      : "app-shell app-shell--demo";
     return (
-      <div className="app-shell app-shell--demo">
+      <div className={shellClassName}>
         <header className="site-header">
           <SiteBrand />
           <InternalLink className="header-link" href="/">

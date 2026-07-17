@@ -5,24 +5,12 @@ import type {
   AgentConcept,
   AgentContractLeg,
   AgentControlCycle,
-  AgentLearningDetail,
   AgentLessonStep,
   AgentRelationship,
   AgentRelationshipId,
   AgentRuntimeAdapter,
   AgentRuntimeResult,
 } from "./agent-types";
-
-function learning(
-  role: string,
-  receives: string,
-  returns: string,
-  owns: string,
-  engineeringNote: string,
-  risk: string,
-): AgentLearningDetail {
-  return { role, receives, returns, owns, engineeringNote, risk };
-}
 
 const groups: readonly AgentComponentGroup[] = [
   {
@@ -32,14 +20,6 @@ const groups: readonly AgentComponentGroup[] = [
     summary: "People, applications, and events that ask the agent system to do work.",
     accent: "input",
     componentIds: ["user-application", "event-message"],
-    learning: learning(
-      "Carry an external goal or event into the controlled agent boundary.",
-      "A user request, application call, message, or event.",
-      "A bounded request for the runtime and, later, a verified response.",
-      "Transport and identity context, not orchestration state or tool authority.",
-      "Channels may be chat, APIs, queues, webhooks, or scheduled events. The runtime should normalize them before model use.",
-      "Treating channel data as trusted instructions can bypass validation and policy.",
-    ),
   },
   {
     id: "runtime",
@@ -48,14 +28,6 @@ const groups: readonly AgentComponentGroup[] = [
     summary: "The software that admits work, coordinates steps, and owns run state.",
     accent: "generation",
     componentIds: ["input-gateway", "coordinator", "task-scheduler"],
-    learning: learning(
-      "Control the run around every model, worker, and tool call.",
-      "Validated requests, approved context, results, and policy decisions.",
-      "Bounded tasks, model calls, tool calls, and a final result.",
-      "Workflow progress, retry budgets, dependencies, and exit conditions.",
-      "A router can choose a workflow while a scheduler or DAG exposes dependencies. The model does not replace this control plane.",
-      "An unbounded or overly privileged runtime can amplify one poor decision across the system.",
-    ),
   },
   {
     id: "context",
@@ -69,14 +41,6 @@ const groups: readonly AgentComponentGroup[] = [
       "skills-instructions",
       "context-manager",
     ],
-    learning: learning(
-      "Supply only the state, evidence, and instructions needed for the current call.",
-      "Current run state, retrieved memory, skills, constraints, and evidence references.",
-      "An approved context package and verified memory updates.",
-      "Retention, provenance, compaction, and access policy outside the model.",
-      "Externalized context makes stateless model calls reproducible and allows token-budget management without hiding state.",
-      "Stale memory, missing provenance, or destructive compaction can silently change the task.",
-    ),
   },
   {
     id: "models",
@@ -85,14 +49,6 @@ const groups: readonly AgentComponentGroup[] = [
     summary: "Stateless reasoning endpoints selected for capability, cost, latency, and data boundaries.",
     accent: "generation",
     componentIds: ["general-model", "private-model"],
-    learning: learning(
-      "Transform supplied context into structured text, plans, classifications, or tool intent.",
-      "A prompt and bounded context assembled for one call.",
-      "A response or typed intent; no durable run state.",
-      "The generated response for that call, not memory, policy, or execution authority.",
-      "Model routing can select different endpoints without changing the surrounding harness or state contract.",
-      "Treating a model as memory or an authorization engine hides state and weakens control.",
-    ),
   },
   {
     id: "agents",
@@ -101,14 +57,6 @@ const groups: readonly AgentComponentGroup[] = [
     summary: "Multiple bounded workers that handle separate tasks and return typed results.",
     accent: "generation",
     componentIds: ["worker-a", "worker-b", "worker-c"],
-    learning: learning(
-      "Divide work by role, capability, data boundary, or dependency.",
-      "A task contract, scoped context, allowed tools, and expected result schema.",
-      "A typed result with status, evidence, and provenance.",
-      "Task-local progress only; the coordinator retains the global run.",
-      "A hub-and-spoke graph or DAG is easier to govern than an unstructured swarm because ownership and dependencies remain explicit.",
-      "Overlapping roles or vague handoffs create duplicate work and unreconcilable results.",
-    ),
   },
   {
     id: "tools",
@@ -117,14 +65,6 @@ const groups: readonly AgentComponentGroup[] = [
     summary: "Typed boundaries to functions, retrieval, data, and write-capable actions.",
     accent: "retrieval",
     componentIds: ["function-tool", "retrieval-tool", "data-source", "action-tool"],
-    learning: learning(
-      "Let agents observe or change external systems through explicit contracts.",
-      "Validated tool names, arguments, identity, and authorization scope.",
-      "A typed result, error, or action receipt with provenance.",
-      "The capability exposed by the tool; the caller still owns workflow decisions.",
-      "MCP can standardize tool contracts, while RAG combines retrieval with generated responses. Write tools need narrower authority than read tools.",
-      "Broad scopes, weak argument validation, or missing provenance can turn a useful tool into a control risk.",
-    ),
   },
   {
     id: "governance",
@@ -133,14 +73,6 @@ const groups: readonly AgentComponentGroup[] = [
     summary: "Policy, evaluation, and human authority that constrain what may advance.",
     accent: "input",
     componentIds: ["policy-guard", "output-evaluator", "human-approval"],
-    learning: learning(
-      "Check inputs and outputs, enforce policy, and require authority for sensitive actions.",
-      "A proposed result or action with evidence, scope, and risk.",
-      "Approval, revision constraints, rejection, or a safe stop.",
-      "Policy decisions and human authority; a model cannot manufacture either.",
-      "Control and verification form a loop when revision returns to the runtime. Approval is a scoped contract, not a general permission token.",
-      "Loose approval scope or weak evaluation can let unsupported output advance as if it were verified.",
-    ),
   },
   {
     id: "outcome",
@@ -149,14 +81,6 @@ const groups: readonly AgentComponentGroup[] = [
     summary: "A verified result distributed to the requester, memory, and observability.",
     accent: "evidence",
     componentIds: ["response-publisher", "memory-writer", "trace-telemetry"],
-    learning: learning(
-      "Separate completion from verification, then publish the accepted result.",
-      "An evaluated response, action receipt, measured result, or explicit no-action decision.",
-      "A user-facing response, verified memory write, and trace or telemetry record.",
-      "The final distribution contract; downstream stores keep only what policy allows.",
-      "Outcome fan-out makes it visible that returning a response, updating memory, and recording telemetry are separate operations.",
-      "Publishing before verification can make a partial or failed run look complete.",
-    ),
   },
 ];
 
@@ -168,14 +92,6 @@ const components: readonly AgentComponent[] = [
     shortLabel: "User / app",
     kind: "user",
     accent: "input",
-    learning: learning(
-      "Express the goal and receive the final response.",
-      "A need, question, command, or event context.",
-      "A request to the channel and receives a verified result.",
-      "The original intent and any explicit constraints.",
-      "The caller can be a person or another system; neither should bypass the same admission checks.",
-      "Ambiguous goals or missing identity can cause the wrong workflow or authority to be selected.",
-    ),
   },
   {
     id: "event-message",
@@ -184,14 +100,6 @@ const components: readonly AgentComponent[] = [
     shortLabel: "Event / message",
     kind: "event",
     accent: "input",
-    learning: learning(
-      "Carry an external signal into the system in a transport-specific envelope.",
-      "Payload, sender identity, channel metadata, and delivery context.",
-      "A normalized input for the gateway.",
-      "Delivery semantics only; it does not decide what the agent should do.",
-      "Queues, APIs, chat messages, and webhooks differ in delivery behavior but should converge on one typed input boundary.",
-      "Duplicate, delayed, or untrusted events can trigger repeated or unsafe work.",
-    ),
   },
   {
     id: "input-gateway",
@@ -200,14 +108,6 @@ const components: readonly AgentComponent[] = [
     shortLabel: "Gateway",
     kind: "gateway",
     accent: "retrieval",
-    learning: learning(
-      "Normalize, validate, authorize, and admit requests.",
-      "External messages and caller identity.",
-      "A validated task contract or a clear rejection.",
-      "Admission policy and the initial request boundary.",
-      "Input hooks can include schema validation, injection defenses, identity checks, and workflow selection.",
-      "A permissive gateway propagates untrusted content into every later component.",
-    ),
   },
   {
     id: "coordinator",
@@ -216,14 +116,6 @@ const components: readonly AgentComponent[] = [
     shortLabel: "Coordinator",
     kind: "coordinator",
     accent: "generation",
-    learning: learning(
-      "Observe run state, select the next bounded step, and decide when to exit.",
-      "Validated tasks, approved context, worker results, tool results, and policy decisions.",
-      "Model requests, worker tasks, tool intents, or a final result.",
-      "The global run state and control loop.",
-      "The coordinator is application code around model calls. It implements stop rules, retry budgets, and dependency checks.",
-      "An unbounded coordinator can loop forever or expand authority across connected systems.",
-    ),
   },
   {
     id: "task-scheduler",
@@ -232,14 +124,6 @@ const components: readonly AgentComponent[] = [
     shortLabel: "Scheduler",
     kind: "scheduler",
     accent: "generation",
-    learning: learning(
-      "Expose dependencies and decide which bounded tasks may run now.",
-      "A plan with task owners, prerequisites, and completion rules.",
-      "Runnable tasks and dependency status.",
-      "Scheduling and dependency state, not model reasoning.",
-      "A DAG supports parallel work while keeping blocked tasks and completed results visible.",
-      "Hidden dependencies can start work too early or repeat work that already succeeded.",
-    ),
   },
   {
     id: "working-context",
@@ -248,14 +132,6 @@ const components: readonly AgentComponent[] = [
     shortLabel: "Working context",
     kind: "context",
     accent: "evidence",
-    learning: learning(
-      "Hold the facts and constraints needed for the current run.",
-      "Validated input, intermediate results, decisions, and unresolved work.",
-      "An approved context slice for a model, worker, or tool call.",
-      "Session-scoped working state outside the model.",
-      "Explicit working context makes pauses, retries, and handoffs reproducible.",
-      "Unbounded context can crowd out current constraints or expose unnecessary data.",
-    ),
   },
   {
     id: "long-term-memory",
@@ -264,14 +140,6 @@ const components: readonly AgentComponent[] = [
     shortLabel: "Long-term memory",
     kind: "memory",
     accent: "evidence",
-    learning: learning(
-      "Recall and retain useful verified information across runs.",
-      "A scoped query or verified outcome selected by policy.",
-      "Relevant memory records or a governed write result.",
-      "Retention, deletion, provenance, and access control.",
-      "Memory should be external to stateless models so lifecycle and policy remain enforceable.",
-      "Persisting unverified output can turn one error into a repeated bias.",
-    ),
   },
   {
     id: "skills-instructions",
@@ -280,14 +148,6 @@ const components: readonly AgentComponent[] = [
     shortLabel: "Skills",
     kind: "skills",
     accent: "generation",
-    learning: learning(
-      "Provide versioned procedures, prompts, schemas, and task-specific guidance.",
-      "A selected role or workflow.",
-      "The instructions and output contract for that role.",
-      "Versioned application behavior, not mutable run state.",
-      "Skills are easier to test and review when treated as named, versioned assets rather than hidden prompt fragments.",
-      "Conflicting or stale instructions can produce inconsistent component behavior.",
-    ),
   },
   {
     id: "context-manager",
@@ -296,14 +156,6 @@ const components: readonly AgentComponent[] = [
     shortLabel: "Context manager",
     kind: "context-manager",
     accent: "evidence",
-    learning: learning(
-      "Select, compact, and order context within a call budget.",
-      "Working state, memory candidates, instructions, and token limits.",
-      "A compact context package with preserved constraints and references.",
-      "Context selection and compaction policy.",
-      "Compaction should preserve decisions, unresolved work, provenance, and safety constraints before removing detail.",
-      "Destructive summarization can erase a constraint while leaving the run looking valid.",
-    ),
   },
   {
     id: "general-model",
@@ -312,14 +164,6 @@ const components: readonly AgentComponent[] = [
     shortLabel: "General model",
     kind: "model",
     accent: "generation",
-    learning: learning(
-      "Handle broad reasoning, language, and planning tasks.",
-      "A prompt and approved context for one call.",
-      "Structured output, text, or tool intent.",
-      "No durable session state and no independent tool authority.",
-      "Capability, latency, and cost may make a general endpoint the default while the runtime still validates its output.",
-      "Assuming broad capability implies trustworthy policy decisions weakens the control boundary.",
-    ),
   },
   {
     id: "private-model",
@@ -328,14 +172,6 @@ const components: readonly AgentComponent[] = [
     shortLabel: "Private model",
     kind: "model",
     accent: "generation",
-    learning: learning(
-      "Handle specialized work or data that requires a different boundary.",
-      "A narrowly selected prompt and approved context.",
-      "A typed response for the runtime to evaluate.",
-      "The response for one call, not workflow state.",
-      "Routing may choose a local, private, smaller, or domain-specialized endpoint without changing the rest of the architecture.",
-      "Different models can disagree; the runtime must not silently merge incompatible outputs.",
-    ),
   },
   ...(["worker-a", "worker-b", "worker-c"] as const).map((id, index): AgentComponent => ({
     id,
@@ -344,14 +180,6 @@ const components: readonly AgentComponent[] = [
     shortLabel: `Worker ${String.fromCharCode(65 + index)}`,
     kind: "worker",
     accent: index === 1 ? "retrieval" : "generation",
-    learning: learning(
-      "Complete one bounded role with its own context, tools, and result schema.",
-      "A typed task, scoped context, allowed capabilities, and completion rule.",
-      "A result with status, evidence, and provenance.",
-      "Task-local work only; the coordinator owns the complete run.",
-      "Multiple workers express concurrency or specialization. Their contracts should remain valid even when the underlying model changes.",
-      "A worker with vague scope or unrestricted tools can duplicate work or exceed its authority.",
-    ),
   })),
   {
     id: "function-tool",
@@ -360,14 +188,6 @@ const components: readonly AgentComponent[] = [
     shortLabel: "Function / API",
     kind: "function-tool",
     accent: "retrieval",
-    learning: learning(
-      "Read data or perform a bounded computation through a typed function.",
-      "A tool name, validated arguments, and caller identity.",
-      "A typed result or explicit error.",
-      "Only the declared function capability.",
-      "Function calling or MCP can expose the same contract; authorization belongs at the tool boundary.",
-      "Weak schemas or excessive scopes can turn generated arguments into unsafe operations.",
-    ),
   },
   {
     id: "retrieval-tool",
@@ -376,14 +196,6 @@ const components: readonly AgentComponent[] = [
     shortLabel: "Retrieval",
     kind: "retrieval",
     accent: "evidence",
-    learning: learning(
-      "Find relevant knowledge and return it with source references.",
-      "A query, filters, identity, and retrieval scope.",
-      "Ranked evidence with provenance and locators.",
-      "Retrieval behavior and access policy, not final answer generation.",
-      "RAG uses retrieved evidence as model context; retrieval quality and citation handling need independent evaluation.",
-      "Low-quality or unauthorized retrieval can ground an answer in the wrong evidence.",
-    ),
   },
   {
     id: "data-source",
@@ -392,14 +204,6 @@ const components: readonly AgentComponent[] = [
     shortLabel: "Data source",
     kind: "data",
     accent: "evidence",
-    learning: learning(
-      "Provide records, documents, events, or measurements behind a tool contract.",
-      "An authorized query from a tool adapter.",
-      "Raw or structured data with source metadata.",
-      "The source data and its consistency model.",
-      "Agents should reach data through governed adapters rather than embedding credentials or source-specific logic in prompts.",
-      "Missing freshness or provenance can make technically valid data misleading.",
-    ),
   },
   {
     id: "action-tool",
@@ -408,14 +212,6 @@ const components: readonly AgentComponent[] = [
     shortLabel: "Action tool",
     kind: "action",
     accent: "input",
-    learning: learning(
-      "Change external state within an explicitly approved scope.",
-      "An exact action, arguments, identity, and policy decision.",
-      "An action receipt or explicit failure.",
-      "Only the approved capability and arguments.",
-      "Write-capable tools should use least privilege, idempotency, audit records, and post-action verification.",
-      "A broad write token can turn an incorrect plan into external harm.",
-    ),
   },
   {
     id: "policy-guard",
@@ -424,14 +220,6 @@ const components: readonly AgentComponent[] = [
     shortLabel: "Policy guard",
     kind: "policy",
     accent: "input",
-    learning: learning(
-      "Enforce rules before data, output, or actions advance.",
-      "A request, context package, output, or proposed action.",
-      "Allow, deny, constrain, or escalate.",
-      "Machine-enforceable policy decisions.",
-      "Policy checks should use explicit inputs and versioned rules rather than asking a model to approve itself.",
-      "Inconsistent policy placement creates paths that bypass the intended control.",
-    ),
   },
   {
     id: "output-evaluator",
@@ -440,14 +228,6 @@ const components: readonly AgentComponent[] = [
     shortLabel: "Evaluator",
     kind: "evaluator",
     accent: "evidence",
-    learning: learning(
-      "Check whether a result satisfies quality, evidence, and completion rules.",
-      "Generated output, tool evidence, expected schema, and evaluation criteria.",
-      "Pass, fail, revision feedback, or uncertainty.",
-      "The evaluation result, not authority for sensitive external action.",
-      "Evaluators may combine deterministic checks, model-based grading, and human review; their limitations should remain visible.",
-      "A weak evaluator can certify fluent but unsupported output.",
-    ),
   },
   {
     id: "human-approval",
@@ -456,14 +236,6 @@ const components: readonly AgentComponent[] = [
     shortLabel: "Human approval",
     kind: "approval",
     accent: "input",
-    learning: learning(
-      "Grant, revise, reject, or stop sensitive work.",
-      "A scoped proposal with evidence, risk, and exact requested authority.",
-      "A decision and any revision constraints.",
-      "Human authority for the reviewed scope only.",
-      "Approval is one control option; systems may also use policy-only paths for low-risk actions or mandatory human review for high-risk ones.",
-      "Vague approval language can authorize more than the reviewer intended.",
-    ),
   },
   {
     id: "response-publisher",
@@ -472,14 +244,6 @@ const components: readonly AgentComponent[] = [
     shortLabel: "Response",
     kind: "publisher",
     accent: "evidence",
-    learning: learning(
-      "Return the verified result through the original or configured channel.",
-      "An accepted result and audience-specific delivery context.",
-      "A user-facing response with status and useful evidence references.",
-      "Response formatting and delivery, not the underlying run state.",
-      "Publishing is separate from generation so failed delivery, redaction, and channel formatting can be handled explicitly.",
-      "Returning an unverified or over-detailed response can mislead users or expose restricted data.",
-    ),
   },
   {
     id: "memory-writer",
@@ -488,14 +252,6 @@ const components: readonly AgentComponent[] = [
     shortLabel: "Memory write",
     kind: "memory",
     accent: "evidence",
-    learning: learning(
-      "Persist only the portion of an outcome approved for future use.",
-      "A verified result, provenance, retention class, and access scope.",
-      "A governed write receipt or rejection.",
-      "The final memory-write contract.",
-      "Separating the writer from memory makes verification, retention, and access policy visible at the moment of persistence.",
-      "Writing incomplete or private run state can contaminate future context.",
-    ),
   },
   {
     id: "trace-telemetry",
@@ -504,14 +260,6 @@ const components: readonly AgentComponent[] = [
     shortLabel: "Trace / telemetry",
     kind: "telemetry",
     accent: "retrieval",
-    learning: learning(
-      "Record observable events, latency, status, cost, and contract-level provenance.",
-      "Run events and component metadata that policy permits recording.",
-      "Searchable traces, measurements, and audit records.",
-      "Operational observability, not hidden model reasoning.",
-      "Trace requests, tool calls, decisions, and outcomes without exposing private chain-of-thought.",
-      "Missing correlation or excessive payload capture makes debugging either impossible or unsafe.",
-    ),
   },
 ];
 
@@ -555,40 +303,28 @@ const concepts: readonly AgentConcept[] = [
     id: "harness",
     label: "Agent harness",
     summary: "The application code that surrounds model calls with state, tools, policy, evaluation, and observability.",
-    learning: learning(
-      "Provide the controlled environment in which an agent run can operate.",
-      "External requests, configuration, context, models, tools, and policy.",
-      "A traceable run whose state and authority remain explicit.",
-      "Everything around the model call: state, orchestration, permissions, retries, evaluation, and delivery.",
-      "The harness is the production system; a model is one replaceable component inside it.",
-      "Weak harness controls can make a capable model unsafe or make failures impossible to reproduce.",
-    ),
+    takeaways: {
+      engineeringPrinciple: "The harness is the production system; a model is one replaceable component inside it.",
+      failureMode: "Weak harness controls can make a capable model unsafe or make failures impossible to reproduce.",
+    },
   },
   {
     id: "run-loop",
     label: "Agent run loop",
     summary: "Observe state, decide the next step, act, evaluate the result, then adapt or exit.",
-    learning: learning(
-      "Advance a run in bounded, observable passes until completion or a stop condition.",
-      "Current state, objective, prior results, retry budget, and policy decisions.",
-      "The next step, a wait or escalation, a retry, or a verified exit.",
-      "Loop progress and exit rules outside the model.",
-      "A production loop needs explicit completion criteria, retry budgets, and wait or escalation states.",
-      "Missing exit rules can repeat work indefinitely or accept an unverified result.",
-    ),
+    takeaways: {
+      engineeringPrinciple: "A production loop needs explicit completion criteria, retry budgets, and wait or escalation states.",
+      failureMode: "Missing exit rules can repeat work indefinitely or accept an unverified result.",
+    },
   },
   {
     id: "typed-contracts",
     label: "Typed contracts",
     summary: "Every boundary names what moves forward, what may return, and which component owns the result.",
-    learning: learning(
-      "Make requests, responses, handoffs, and failures inspectable across components.",
-      "A schema, identity, scope, and expected status behavior.",
-      "A typed value, typed error, or explicit absence of a result.",
-      "Boundary behavior between components.",
-      "Typed contracts allow models, workers, and tools to change independently while tests preserve system behavior.",
-      "Implicit contracts hide failed calls and make ownership ambiguous.",
-    ),
+    takeaways: {
+      engineeringPrinciple: "Typed contracts allow models, workers, and tools to change independently while tests preserve system behavior.",
+      failureMode: "Implicit contracts hide failed calls and make ownership ambiguous.",
+    },
   },
 ];
 

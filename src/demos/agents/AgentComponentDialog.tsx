@@ -3,9 +3,11 @@ import { useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
 
 import { AgentConceptDiagram } from "./AgentConceptDiagram";
+import { AgentPlatformBlueprint } from "./AgentPlatformBlueprint";
 import { getAgentDetailContent } from "./agent-diagram-model";
 import type {
   AgentArchitectureModel,
+  AgentConceptTakeaways,
   AgentDetailTarget,
 } from "./agent-types";
 
@@ -25,45 +27,10 @@ const FOCUSABLE_ELEMENT_SELECTOR = [
   "[tabindex]:not([tabindex='-1'])",
 ].join(",");
 
-function LearningFields({
-  learning,
-}: {
-  readonly learning: ReturnType<typeof getAgentDetailContent>["learning"];
-}): React.JSX.Element {
-  return (
-    <dl className="agent-detail-dialog__facts">
-      <div>
-        <dt>Role</dt>
-        <dd>{learning.role}</dd>
-      </div>
-      <div>
-        <dt>Receives</dt>
-        <dd>{learning.receives}</dd>
-      </div>
-      <div>
-        <dt>Returns</dt>
-        <dd>{learning.returns}</dd>
-      </div>
-      <div>
-        <dt>Owns / does not own</dt>
-        <dd>{learning.owns}</dd>
-      </div>
-      <div>
-        <dt>Engineer note</dt>
-        <dd>{learning.engineeringNote}</dd>
-      </div>
-      <div data-tone="risk">
-        <dt>Common risk</dt>
-        <dd>{learning.risk}</dd>
-      </div>
-    </dl>
-  );
-}
-
 function ConceptTakeaways({
-  learning,
+  takeaways,
 }: {
-  readonly learning: ReturnType<typeof getAgentDetailContent>["learning"];
+  readonly takeaways: AgentConceptTakeaways;
 }): React.JSX.Element {
   return (
     <div className="agent-detail-dialog__takeaways">
@@ -71,14 +38,14 @@ function ConceptTakeaways({
         <Lightbulb aria-hidden="true" />
         <div>
           <span>Engineering principle</span>
-          <p>{learning.engineeringNote}</p>
+          <p>{takeaways.engineeringPrinciple}</p>
         </div>
       </article>
       <article data-tone="risk">
         <TriangleAlert aria-hidden="true" />
         <div>
           <span>Failure mode</span>
-          <p>{learning.risk}</p>
+          <p>{takeaways.failureMode}</p>
         </div>
       </article>
     </div>
@@ -215,14 +182,17 @@ export function AgentComponentDialog({
             <X aria-hidden="true" />
           </button>
         </header>
-        {target.kind === "concept" ? (
+        {target.kind === "concept" && detail.kind === "concept" ? (
           <div className="agent-detail-dialog__concept-body">
             <AgentConceptDiagram conceptId={target.conceptId} />
-            <ConceptTakeaways learning={detail.learning} />
+            <ConceptTakeaways takeaways={detail.takeaways} />
           </div>
-        ) : (
-          <LearningFields learning={detail.learning} />
-        )}
+        ) : detail.kind === "platform" ? (
+          <AgentPlatformBlueprint
+            recommendation={detail.openSourceRecommendation}
+            spec={detail.blueprint}
+          />
+        ) : null}
       </div>
     </div>,
     document.body,

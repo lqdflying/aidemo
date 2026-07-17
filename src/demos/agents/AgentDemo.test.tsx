@@ -262,16 +262,49 @@ describe("AgentDemo architecture explorer", () => {
     expect(getApplicationRoot()).toHaveAttribute("inert");
     expect(getApplicationRoot()).toHaveAttribute("aria-hidden", "true");
     expect(document.body.style.overflow).toBe("hidden");
+    expect(within(dialog).getByRole("figure", {
+      name: "Coordinator platform blueprint",
+    })).toBeInTheDocument();
     for (const field of [
-      "Role",
-      "Receives",
-      "Returns",
-      "Owns / does not own",
-      "Engineer note",
-      "Common risk",
+      "Observe",
+      "Decide",
+      "Dispatch",
+      "Evaluate",
+      "Run record",
+      "Exit or escalate",
     ]) {
       expect(within(dialog).getByText(field)).toBeInTheDocument();
     }
+    expect(within(dialog).queryByText("Owns / does not own")).not.toBeInTheDocument();
+    const openSourceRegion = within(dialog).getByRole("region", {
+      name: "Build with open source",
+    });
+    const referenceStack = openSourceRegion.querySelector(".agent-open-source__stack");
+    if (!(referenceStack instanceof HTMLElement)) {
+      throw new Error("The open-source reference stack is missing.");
+    }
+    expect(within(referenceStack).getByText("LangGraph"))
+      .toBeInTheDocument();
+    expect(within(openSourceRegion).getByText("Reviewed 17 Jul 2026"))
+      .toBeInTheDocument();
+    expect(within(referenceStack).getByRole("link", {
+      name: "Open official LangGraph documentation",
+    })).toHaveAttribute("href", "https://docs.langchain.com/oss/python/langgraph/overview");
+    const pythonSummary = within(openSourceRegion).getByText("Python ecosystem")
+      .closest("summary");
+    const pythonDetails = pythonSummary?.closest("details");
+    if (!(pythonSummary instanceof HTMLElement) || !(pythonDetails instanceof HTMLDetailsElement)) {
+      throw new Error("The collapsed Python ecosystem section is missing.");
+    }
+    expect(pythonDetails).not.toHaveAttribute("open");
+
+    fireEvent.click(pythonSummary);
+
+    expect(pythonDetails).toHaveAttribute("open");
+    expect(within(openSourceRegion).getByText("CrewAI")).toBeInTheDocument();
+    expect(within(openSourceRegion).getByText("smolagents")).toBeInTheDocument();
+    expect(within(openSourceRegion).getAllByText("Featured above").length)
+      .toBeGreaterThan(0);
     expect(trigger).toHaveAttribute("aria-pressed", "true");
     expect(container.querySelector(".agent-stage")).toHaveAttribute("data-playback", "paused");
     expect(within(dialog).getByRole("button", { name: "Close component details" }))
@@ -285,13 +318,41 @@ describe("AgentDemo architecture explorer", () => {
     expect(trigger).toHaveFocus();
   });
 
-  it("keeps compact facts for groups and opens diagram-first engineering concepts", () => {
+  it("opens a full tools-and-knowledge platform blueprint and visual concepts", () => {
     renderAgentDemo();
 
     fireEvent.click(screen.getByRole("button", { name: /Tools & knowledge/ }));
     const groupDialog = screen.getByRole("dialog", { name: "Tools & knowledge" });
     expect(groupDialog).toHaveAttribute("data-detail-kind", "group");
-    expect(within(groupDialog).getByText(/MCP can standardize tool contracts/))
+    expect(within(groupDialog).getByRole("figure", {
+      name: "Tools & knowledge platform blueprint",
+    })).toBeInTheDocument();
+    for (const label of [
+      "Built-in functions & APIs",
+      "MCP servers",
+      "Global & enterprise search",
+      "RAG corpus & index",
+      "Retrieval pipeline",
+      "Evidence bundle",
+      "Offline RAG knowledge lifecycle",
+    ]) {
+      expect(within(groupDialog).getByText(label)).toBeInTheDocument();
+    }
+    expect(within(groupDialog).getByRole("button", { name: "Replay flow" }))
+      .toBeInTheDocument();
+    const toolsOpenSource = within(groupDialog).getByRole("region", {
+      name: "Build with open source",
+    });
+    for (const solution of [
+      "MCP protocol + stable official SDK",
+      "FastMCP",
+      "LangChain MCP Adapters",
+      "ContextForge",
+      "Pydantic AI",
+    ]) {
+      expect(within(toolsOpenSource).getAllByText(solution).length).toBeGreaterThan(0);
+    }
+    expect(within(toolsOpenSource).getByText(/keep every dependency on its current stable release/i))
       .toBeInTheDocument();
     fireEvent.click(within(groupDialog).getByRole("button", { name: "Close component details" }));
 
@@ -304,6 +365,9 @@ describe("AgentDemo architecture explorer", () => {
     })).toBeInTheDocument();
     expect(within(conceptDialog).getByText(/explicit completion criteria/))
       .toBeInTheDocument();
+    expect(within(conceptDialog).queryByRole("region", {
+      name: "Build with open source",
+    })).not.toBeInTheDocument();
   });
 
   it("shows the agent harness as a controlled responsibility-boundary diagram", () => {

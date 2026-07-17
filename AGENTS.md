@@ -18,6 +18,8 @@ The always-applied rules currently include:
   responsive behavior, and UI implementation guardrails.
 - `.cursor/rules/release.mdc` - image versioning, validation, Harbor publishing,
   Cosign signing, vulnerability scanning, and GA controls.
+- `.cursor/rules/solution-review.mdc` - current technology recommendation,
+  maintenance, stability, licensing, and supersession audit procedure.
 
 Also discover any future `.cursor/rules/*.mdc` files. Apply a rule when its
 frontmatter has `alwaysApply: true`, or when its `globs` match files in the

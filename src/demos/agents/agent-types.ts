@@ -117,13 +117,9 @@ export interface AgentContractLeg {
   readonly direction: AgentContractDirection;
 }
 
-export interface AgentLearningDetail {
-  readonly role: string;
-  readonly receives: string;
-  readonly returns: string;
-  readonly owns: string;
-  readonly engineeringNote: string;
-  readonly risk: string;
+export interface AgentConceptTakeaways {
+  readonly engineeringPrinciple: string;
+  readonly failureMode: string;
 }
 
 export interface AgentComponent {
@@ -133,7 +129,6 @@ export interface AgentComponent {
   readonly shortLabel: string;
   readonly kind: AgentComponentKind;
   readonly accent: AgentAccent;
-  readonly learning: AgentLearningDetail;
 }
 
 export interface AgentComponentGroup {
@@ -143,7 +138,6 @@ export interface AgentComponentGroup {
   readonly summary: string;
   readonly accent: AgentAccent;
   readonly componentIds: readonly AgentComponentId[];
-  readonly learning: AgentLearningDetail;
 }
 
 interface AgentRelationshipBase {
@@ -180,7 +174,7 @@ export interface AgentConcept {
   readonly id: AgentConceptId;
   readonly label: string;
   readonly summary: string;
-  readonly learning: AgentLearningDetail;
+  readonly takeaways: AgentConceptTakeaways;
 }
 
 export interface AgentLessonStep {

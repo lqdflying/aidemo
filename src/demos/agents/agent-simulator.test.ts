@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { validateStory } from "../../framework/story";
 import { isClosedControlCycle } from "./agent-diagram-model";
 import { agentGroupOrder } from "./agent-knowledge";
+import { agentComponentBlueprints, agentGroupBlueprints } from "./agent-platform-details";
 import { agentPhases } from "./agent-routing";
 import { simulateAgentArchitecture } from "./agent-simulator";
 import { agentPhaseStories, agentStory } from "./agent-story";
@@ -56,21 +57,11 @@ describe("generic agent architecture model", () => {
     expect(isClosedControlCycle(model)).toBe(true);
   });
 
-  it("keeps all learning contracts complete", () => {
+  it("keeps concept takeaways complete", () => {
     const model = simulateAgentArchitecture().data;
-    const learningRecords = [
-      ...model.groups.map(({ learning }) => learning),
-      ...model.components.map(({ learning }) => learning),
-      ...model.concepts.map(({ learning }) => learning),
-    ];
-
-    for (const learning of learningRecords) {
-      expect(learning.role).not.toBe("");
-      expect(learning.receives).not.toBe("");
-      expect(learning.returns).not.toBe("");
-      expect(learning.owns).not.toBe("");
-      expect(learning.engineeringNote).not.toBe("");
-      expect(learning.risk).not.toBe("");
+    for (const concept of model.concepts) {
+      expect(concept.takeaways.engineeringPrinciple).not.toBe("");
+      expect(concept.takeaways.failureMode).not.toBe("");
     }
   });
 
@@ -121,14 +112,15 @@ describe("generic agent architecture model", () => {
       components: model.components.map(({ label, shortLabel }) => ({ label, shortLabel })),
       trace: model.trace.map(({ label, summary, patternLabel }) => ({ label, summary, patternLabel })),
     });
-    const engineeringNotes = model.components
-      .map(({ learning }) => learning.engineeringNote)
-      .join(" ");
+    const engineeringBlueprints = JSON.stringify({
+      groups: agentGroupBlueprints,
+      components: agentComponentBlueprints,
+    });
 
     expect(visibleCopy).not.toMatch(/\b(?:MCP|RAG|DAG)\b/);
-    expect(engineeringNotes).toMatch(/\bMCP\b/);
-    expect(engineeringNotes).toMatch(/\bRAG\b/);
-    expect(engineeringNotes).toMatch(/\bDAG\b/);
+    expect(engineeringBlueprints).toMatch(/\bMCP\b/);
+    expect(engineeringBlueprints).toMatch(/\bRAG\b/);
+    expect(engineeringBlueprints).toMatch(/\bDAG\b/);
   });
 });
 

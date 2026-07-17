@@ -175,10 +175,21 @@ describe("agent diagram model", () => {
     });
 
     expect(scheduler).toMatchObject({ eyebrow: "Component", label: "Task scheduler" });
-    expect(scheduler.learning.engineeringNote).toMatch(/DAG/);
+    expect(scheduler.kind).toBe("platform");
+    if (scheduler.kind !== "platform") throw new Error("Expected scheduler blueprint.");
+    expect(scheduler.blueprint.kind).toBe("state-machine");
+    expect(JSON.stringify(scheduler.blueprint)).toMatch(/DAG/);
+    expect(scheduler.openSourceRecommendation.preferred.solutionId).toBe("temporal");
     expect(tools).toMatchObject({ eyebrow: "Group", label: "Tools & knowledge" });
-    expect(tools.learning.engineeringNote).toMatch(/MCP/);
+    expect(tools.kind).toBe("platform");
+    if (tools.kind !== "platform") throw new Error("Expected tools blueprint.");
+    expect(tools.blueprint.kind).toBe("source-map");
+    expect(JSON.stringify(tools.blueprint)).toMatch(/MCP/);
+    expect(tools.openSourceRecommendation.preferred.solutionId).toBe("mcp");
     expect(harness).toMatchObject({ eyebrow: "Concept", label: "Agent harness" });
+    expect(harness.kind).toBe("concept");
+    if (harness.kind !== "concept") throw new Error("Expected concept detail.");
+    expect(harness.takeaways.engineeringPrinciple).toMatch(/production system/);
     expect(getAgentDetailTargetKey(null)).toBe("current-lesson");
     expect(getAgentDetailTargetKey({ kind: "group", groupId: "tools" })).toBe("group:tools");
   });

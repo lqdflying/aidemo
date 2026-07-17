@@ -1,17 +1,27 @@
 import { agentTopologyLabels } from "./agent-knowledge";
+import {
+  getAgentComponentBlueprint,
+  getAgentGroupBlueprint,
+  type AgentPlatformDetailSpec,
+} from "./agent-platform-details";
+import {
+  getAgentComponentOpenSourceRecommendation,
+  getAgentGroupOpenSourceRecommendation,
+  type AgentOpenSourceRecommendation,
+} from "./agent-open-source";
 import type {
   AgentAccent,
   AgentArchitectureModel,
   AgentComponent,
   AgentComponentGroup,
   AgentConcept,
+  AgentConceptTakeaways,
   AgentContractDirection,
   AgentContractLeg,
   AgentDetailTarget,
   AgentEventKind,
   AgentFlowTone,
   AgentGroupId,
-  AgentLearningDetail,
   AgentLessonState,
   AgentLessonStep,
   AgentRelationship,
@@ -61,13 +71,24 @@ const systemOverviewFlow: readonly SystemOverviewFlowLeg[] = [
   { relationshipId: "outcome-to-entry", direction: "forward", phaseIndex: 11 },
 ];
 
-export interface AgentDetailContent {
+interface AgentDetailContentBase {
   readonly eyebrow: "Component" | "Group" | "Concept";
   readonly label: string;
   readonly summary: string;
   readonly accent: AgentAccent;
-  readonly learning: AgentLearningDetail;
 }
+
+export type AgentDetailContent = AgentDetailContentBase & (
+  | {
+      readonly kind: "platform";
+      readonly blueprint: AgentPlatformDetailSpec;
+      readonly openSourceRecommendation: AgentOpenSourceRecommendation;
+    }
+  | {
+      readonly kind: "concept";
+      readonly takeaways: AgentConceptTakeaways;
+    }
+);
 
 function unique<T>(values: readonly T[]): readonly T[] {
   return [...new Set(values)];
@@ -136,33 +157,42 @@ export function getAgentDetailContent(
 ): AgentDetailContent {
   if (target.kind === "component") {
     const component = getAgentComponent(model, target.componentId);
+    const blueprint = getAgentComponentBlueprint(target.componentId);
     return {
+      kind: "platform",
       eyebrow: "Component",
-      label: component.label,
-      summary: component.learning.role,
+      label: blueprint.title,
+      summary: blueprint.summary,
       accent: component.accent,
-      learning: component.learning,
+      blueprint,
+      openSourceRecommendation: getAgentComponentOpenSourceRecommendation(
+        target.componentId,
+      ),
     };
   }
 
   if (target.kind === "group") {
     const group = getAgentGroup(model, target.groupId);
+    const blueprint = getAgentGroupBlueprint(target.groupId);
     return {
+      kind: "platform",
       eyebrow: "Group",
-      label: group.label,
-      summary: group.summary,
+      label: blueprint.title,
+      summary: blueprint.summary,
       accent: group.accent,
-      learning: group.learning,
+      blueprint,
+      openSourceRecommendation: getAgentGroupOpenSourceRecommendation(target.groupId),
     };
   }
 
   const concept = getAgentConcept(model, target.conceptId);
   return {
+    kind: "concept",
     eyebrow: "Concept",
     label: concept.label,
     summary: concept.summary,
     accent: "generation",
-    learning: concept.learning,
+    takeaways: concept.takeaways,
   };
 }
 

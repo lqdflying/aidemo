@@ -1,0 +1,104 @@
+---
+description: Required audit procedure for current technology and open-source solution recommendations
+alwaysApply: true
+---
+
+# Technology Solution Review Rules
+
+Apply this procedure whenever the user asks to review, validate, refresh, compare,
+or recommend frameworks, libraries, protocols, platforms, infrastructure, models,
+or other implementation solutions. Phrases such as "best practice", "up to
+date", "not outdated", and "review the solutions" trigger the same procedure.
+
+## Fresh research is mandatory
+
+- Perform a new web audit for every explicit solution review. Do not rely only
+  on model memory, a prior conversation, repository copy, or an earlier audit.
+- Record the exact review date and evaluate every proposed or existing entry;
+  do not spot-check only the headline choices.
+- Use primary sources: the official documentation, canonical source repository,
+  release notes, migration or deprecation notice, and current license file.
+  Do not use listicles, search-result snippets, stars, or popularity as proof of
+  production fitness.
+- If primary sources are unavailable, label the affected entry as unverified
+  and do not claim that the complete catalog is current.
+
+## Audit each solution
+
+For every entry, verify and document:
+
+1. **Canonical identity** - current project name, owner or foundation, official
+   repository, and official documentation URL. Follow renames and repository
+   moves to their current destination.
+2. **Maintenance** - evidence of active maintenance or an intentionally stable
+   standard. A mature specification may remain current without frequent
+   releases; distinguish that from an abandoned implementation.
+3. **Production channel** - stable versus alpha, beta, preview, experimental,
+   prerelease, or developer documentation. Do not make a non-stable release the
+   preferred production recommendation unless the user explicitly accepts it.
+4. **Supersession** - deprecation, archived status, successor projects,
+   migration guidance, and replaced subsystems. Recommend the current successor
+   and name the excluded predecessor when that prevents confusion.
+5. **License scope** - read the current license, not a historical reputation.
+   Distinguish an entirely OSI-approved project from an OSI-licensed core with
+   separate enterprise code, and from source-available licenses such as ELv2,
+   SSPL, or BSL. When the user requests open source, default to OSI-approved
+   code and exclude source-available-only choices unless explicitly requested.
+6. **Architectural fit** - the component boundary the solution should own,
+   what it should be paired with, and when an alternative is a better fit.
+   Avoid presenting overlapping products as though they all own the same state.
+
+## Python ecosystem is the default preference
+
+- Audit mature Python-native projects and first-class Python implementations
+  before considering non-Python alternatives for every component boundary.
+- When an actively maintained, stable, OSI-approved Python solution satisfies
+  the production, security, durability, and architectural requirements, it
+  MUST be the preferred solution and MUST appear first in written output and
+  product UI. Do not hide it in companions, alternatives, or a collapsed
+  secondary section beneath a non-Python recommendation.
+- Prefer a Python-native implementation over a language-neutral platform when
+  both can own the boundary equally well. Language-neutral protocols and
+  infrastructure may remain companions around the Python implementation.
+- A non-Python solution may be preferred only when no mature Python solution
+  can satisfy a material requirement or when an explicit platform constraint
+  requires it. State the missing capability or constraint and keep the best
+  Python option visible as the next choice when it remains useful.
+- Verify that a project is genuinely Python-native or has a production-grade,
+  first-class Python implementation. A thin client SDK or community wrapper
+  alone is not enough to classify a non-Python platform as a Python solution.
+
+## Recommendation output
+
+- Lead with corrections discovered by the audit; do not hide changes behind a
+  generic assurance that the list is current.
+- For each component, provide one Python-first preferred solution and only
+  useful companion or alternative choices. Explain the decision rule rather
+  than ranking by popularity, and document any justified non-Python exception.
+- Cite the official source supporting time-sensitive maintenance, stability,
+  license, deprecation, or successor claims.
+- Clearly label inference when the recommendation combines facts from multiple
+  official sources.
+- Avoid embedding exact versions in long-lived explanatory UI. Prefer
+  "current stable release" plus a review date; use exact pins only in install,
+  lockfile, compatibility, or migration instructions where reproducibility
+  requires them.
+
+## When recommendations are stored in the product
+
+- Keep solution metadata in one typed catalog instead of duplicating it across
+  UI cards. Include at least the official URL, license and scope, maintenance
+  state, release channel, supported ecosystem or languages, and `reviewedOn`.
+- Keep component-specific fit and selection guidance separate from reusable
+  project metadata.
+- Do not make the application fetch live project data merely to render the
+  catalog. Freshness is an engineering review gate, not a runtime dependency.
+- Add validation for exhaustive component coverage, valid catalog references,
+  HTTPS official URLs, stable preferred choices, bounded alternatives, and
+  explicitly prohibited deprecated, superseded, prerelease-only, or
+  source-available-only entries.
+- Add validation that each preferred solution is Python-native or has a
+  production-grade first-class Python implementation. Any non-Python preferred
+  solution must carry a tested, explicit exception reason.
+- Re-run the full audit whenever the user asks for another review, even when the
+  stored review date appears recent.

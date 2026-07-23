@@ -1,4 +1,3 @@
-import { agentTopologyLabels } from "./agent-knowledge";
 import {
   getAgentComponentBlueprint,
   getAgentGroupBlueprint,
@@ -29,12 +28,6 @@ import type {
   AgentTopologyKind,
 } from "./agent-types";
 
-export interface AgentRelationshipView {
-  readonly relationship: AgentRelationship;
-  readonly activeDirections: readonly AgentContractDirection[];
-  readonly state: AgentLessonState;
-}
-
 export interface AgentFlowLegView {
   readonly id: string;
   readonly relationship: AgentRelationship;
@@ -44,7 +37,7 @@ export interface AgentFlowLegView {
   readonly label: string;
   readonly tone: AgentFlowTone;
   readonly phaseIndex: number;
-  readonly phaseCount: 1 | 2 | 3 | 12;
+  readonly phaseCount: 1 | 2 | 3 | 13;
   readonly schedule: "lesson" | "system-overview";
   readonly state: AgentLessonState;
 }
@@ -66,9 +59,10 @@ const systemOverviewFlow: readonly SystemOverviewFlowLeg[] = [
   { relationshipId: "agents-to-tools", direction: "return", phaseIndex: 7 },
   { relationshipId: "agents-to-governance", direction: "forward", phaseIndex: 8 },
   { relationshipId: "governance-to-tools", direction: "forward", phaseIndex: 9 },
-  { relationshipId: "tools-to-outcome", direction: "forward", phaseIndex: 10 },
-  { relationshipId: "outcome-to-context", direction: "forward", phaseIndex: 11 },
-  { relationshipId: "outcome-to-entry", direction: "forward", phaseIndex: 11 },
+  { relationshipId: "governance-to-outcome", direction: "forward", phaseIndex: 10 },
+  { relationshipId: "tools-to-outcome", direction: "forward", phaseIndex: 11 },
+  { relationshipId: "outcome-to-context", direction: "forward", phaseIndex: 12 },
+  { relationshipId: "outcome-to-entry", direction: "forward", phaseIndex: 12 },
 ];
 
 interface AgentDetailContentBase {
@@ -203,6 +197,19 @@ export function getAgentDetailTargetKey(target: AgentDetailTarget | null): strin
   return `concept:${target.conceptId}`;
 }
 
+export function getAgentDetailTargetLabel(
+  model: AgentArchitectureModel,
+  target: AgentDetailTarget,
+): string {
+  if (target.kind === "component") {
+    return getAgentComponent(model, target.componentId).label;
+  }
+  if (target.kind === "group") {
+    return getAgentGroup(model, target.groupId).label;
+  }
+  return getAgentConcept(model, target.conceptId).label;
+}
+
 export function getActiveGroupIds(
   model: AgentArchitectureModel,
   step: AgentLessonStep,
@@ -218,21 +225,6 @@ export function getActiveGroupIds(
   }
 
   return unique(activeGroups);
-}
-
-export function buildRelationshipViews(
-  model: AgentArchitectureModel,
-  step: AgentLessonStep,
-): readonly AgentRelationshipView[] {
-  return model.relationships.map((relationship) => ({
-    relationship,
-    activeDirections: unique(
-      step.contractLegs
-        .filter((leg) => leg.relationshipId === relationship.id)
-        .map((leg) => leg.direction),
-    ),
-    state: step.state,
-  }));
 }
 
 function getFlowPhaseCount(step: AgentLessonStep): 1 | 2 | 3 {
@@ -287,7 +279,7 @@ export function buildAgentFlowLegViews(
           : relationship.label,
         tone: getFlowTone(relationship, direction),
         phaseIndex,
-        phaseCount: 12,
+        phaseCount: 13,
         schedule: "system-overview",
         state: step.state,
       };
@@ -357,27 +349,4 @@ export function getTopologyDescription(topology: AgentTopologyKind): string {
     "fan-out": "One accepted outcome is distributed through separate contracts.",
   };
   return descriptions[topology];
-}
-
-export function getTopologyLabel(topology: AgentTopologyKind): string {
-  return agentTopologyLabels[topology];
-}
-
-export function getActiveContractLabels(
-  views: readonly AgentRelationshipView[],
-): readonly string[] {
-  return views.flatMap(({ relationship, activeDirections }) =>
-    activeDirections.map((direction) => {
-      const source = direction === "forward"
-        ? relationship.sourceGroupId
-        : relationship.targetGroupId;
-      const target = direction === "forward"
-        ? relationship.targetGroupId
-        : relationship.sourceGroupId;
-      const label = direction === "return" && relationship.interaction === "exchange"
-        ? relationship.returnLabel
-        : relationship.label;
-      return `${source} → ${target}: ${label}`;
-    }),
-  );
 }

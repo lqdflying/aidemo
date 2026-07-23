@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildAgentFlowLegViews,
-  buildRelationshipViews,
   getActiveGroupIds,
   getAgentDetailContent,
   getAgentDetailTargetKey,
+  getAgentDetailTargetLabel,
   getAgentLessonStep,
   getLegEndpoints,
   getTopologyDescription,
@@ -16,16 +16,34 @@ import { simulateAgentArchitecture } from "./agent-simulator";
 describe("agent diagram model", () => {
   const model = simulateAgentArchitecture().data;
 
+  it("labels focus targets for lesson inspect chips", () => {
+    expect(getAgentDetailTargetLabel(model, { kind: "group", groupId: "runtime" }))
+      .toBe("Orchestrator");
+    expect(getAgentDetailTargetLabel(model, { kind: "concept", conceptId: "harness" }))
+      .toBe("Agent harness");
+    expect(getAgentDetailTargetLabel(model, { kind: "group", groupId: "outcome" }))
+      .toBe("Outcome & return");
+  });
+
   it("activates one direction for a sequence and two for an exchange loop", () => {
     const sequence = getAgentLessonStep(model, "accept-input");
     const exchange = getAgentLessonStep(model, "assemble-context");
-    const sequenceView = buildRelationshipViews(model, sequence)
-      .find(({ relationship }) => relationship.id === "entry-to-runtime");
-    const exchangeView = buildRelationshipViews(model, exchange)
-      .find(({ relationship }) => relationship.id === "runtime-to-context");
+    const sequenceFlow = buildAgentFlowLegViews(model, sequence);
+    const exchangeFlow = buildAgentFlowLegViews(model, exchange);
 
-    expect(sequenceView?.activeDirections).toEqual(["forward"]);
-    expect(exchangeView?.activeDirections).toEqual(["forward", "return"]);
+    expect(sequenceFlow.map(({ relationship, direction }) => ({
+      relationshipId: relationship.id,
+      direction,
+    }))).toEqual([
+      { relationshipId: "entry-to-runtime", direction: "forward" },
+    ]);
+    expect(exchangeFlow.map(({ relationship, direction }) => ({
+      relationshipId: relationship.id,
+      direction,
+    }))).toEqual([
+      { relationshipId: "runtime-to-context", direction: "forward" },
+      { relationshipId: "runtime-to-context", direction: "return" },
+    ]);
     expect(getActiveGroupIds(model, sequence)).toEqual(["entry", "runtime"]);
   });
 
@@ -81,16 +99,16 @@ describe("agent diagram model", () => {
       ]);
   });
 
-  it("builds a separate twelve-phase illustrative System loop", () => {
+  it("builds a separate thirteen-phase illustrative System loop", () => {
     const systemStep = getAgentLessonStep(model, "show-harness");
     const systemFlow = buildAgentFlowLegViews(model, systemStep);
 
     expect(systemStep.contractLegs).toEqual([]);
-    expect(systemFlow).toHaveLength(13);
+    expect(systemFlow).toHaveLength(14);
     expect(new Set(systemFlow.map(({ schedule }) => schedule)))
       .toEqual(new Set(["system-overview"]));
     expect(new Set(systemFlow.map(({ phaseCount }) => phaseCount)))
-      .toEqual(new Set([12]));
+      .toEqual(new Set([13]));
     expect(systemFlow.filter(({ direction }) => direction === "return")
       .every(({ tone }) => tone === "response")).toBe(true);
     expect(systemFlow.find(({ relationship }) => relationship.id === "tools-to-outcome")?.tone)
@@ -110,9 +128,10 @@ describe("agent diagram model", () => {
       { relationshipId: "agents-to-tools", direction: "return", phaseIndex: 7 },
       { relationshipId: "agents-to-governance", direction: "forward", phaseIndex: 8 },
       { relationshipId: "governance-to-tools", direction: "forward", phaseIndex: 9 },
-      { relationshipId: "tools-to-outcome", direction: "forward", phaseIndex: 10 },
-      { relationshipId: "outcome-to-context", direction: "forward", phaseIndex: 11 },
-      { relationshipId: "outcome-to-entry", direction: "forward", phaseIndex: 11 },
+      { relationshipId: "governance-to-outcome", direction: "forward", phaseIndex: 10 },
+      { relationshipId: "tools-to-outcome", direction: "forward", phaseIndex: 11 },
+      { relationshipId: "outcome-to-context", direction: "forward", phaseIndex: 12 },
+      { relationshipId: "outcome-to-entry", direction: "forward", phaseIndex: 12 },
     ]);
   });
 
@@ -122,24 +141,17 @@ describe("agent diagram model", () => {
       "retry-tool-call",
       "accept-tool-result",
     ] as const;
-    const views = eventKinds.map((eventKind) => {
-      const step = getAgentLessonStep(model, eventKind);
-      return buildRelationshipViews(model, step)
-        .find(({ relationship }) => relationship.id === "agents-to-tools");
-    });
+    const flows = eventKinds.map((eventKind) =>
+      buildAgentFlowLegViews(model, getAgentLessonStep(model, eventKind)),
+    );
 
-    expect(views.map((view) => view?.state)).toEqual(["failed", "retry", "recovered"]);
-    expect(views.map((view) => view?.activeDirections)).toEqual([
+    expect(flows.map((flow) => flow[0]?.state)).toEqual(["failed", "retry", "recovered"]);
+    expect(flows.map((flow) => flow.map(({ direction }) => direction))).toEqual([
       ["forward"],
       ["forward"],
       ["return"],
     ]);
-
-    const failedFlow = buildAgentFlowLegViews(
-      model,
-      getAgentLessonStep(model, "record-tool-failure"),
-    );
-    expect(failedFlow).toMatchObject([
+    expect(flows[0]).toMatchObject([
       { direction: "forward", tone: "request", state: "failed" },
     ]);
   });
@@ -196,8 +208,7 @@ describe("agent diagram model", () => {
 
   it("activates only the published fan-out contracts at the final lesson", () => {
     const step = getAgentLessonStep(model, "publish-outcome");
-    const activeIds = buildRelationshipViews(model, step)
-      .filter(({ activeDirections }) => activeDirections.length > 0)
+    const activeIds = buildAgentFlowLegViews(model, step)
       .map(({ relationship }) => relationship.id);
 
     expect(step.topology).toBe("fan-out");

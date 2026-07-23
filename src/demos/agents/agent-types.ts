@@ -1,4 +1,4 @@
-import type { DemoRuntimeAdapter, DemoRuntimeResult } from "../../framework/types";
+import type { DemoRuntimeResult } from "../../framework/types";
 
 export type AgentEventKind =
   | "map-components"
@@ -9,6 +9,7 @@ export type AgentEventKind =
   | "delegate-workers"
   | "call-function-tool"
   | "retrieve-knowledge"
+  | "observe-results"
   | "start-tool-attempt"
   | "record-tool-failure"
   | "retry-tool-call"
@@ -206,6 +207,4 @@ export interface AgentArchitectureModel {
   readonly trace: readonly AgentLessonStep[];
 }
 
-export type AgentRuntimeInput = Readonly<Record<string, never>>;
 export type AgentRuntimeResult = DemoRuntimeResult<AgentArchitectureModel>;
-export type AgentRuntimeAdapter = DemoRuntimeAdapter<AgentRuntimeInput, AgentRuntimeResult>;

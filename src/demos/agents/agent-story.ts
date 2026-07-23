@@ -14,7 +14,7 @@ const overviewScene: DemoScene<AgentEventKind> = {
       kind: "map-components",
       title: "Eight groups make the system legible",
       explanation:
-        "Input, runtime, context, models, workers, tools, governance, and outcome stay in fixed positions so students can build a reliable mental map.",
+        "Input, Orchestrator, context, models, Agents, tools, governance, and outcome stay in fixed positions so students can build a reliable mental map.",
       durationMs: 9000,
       easing: "ease-out",
       accent: "retrieval",
@@ -123,14 +123,25 @@ const executeScene: DemoScene<AgentEventKind> = {
       accent: "evidence",
       dependencies: ["execute-call-function-tool"],
     },
+    {
+      id: "execute-observe-results",
+      kind: "observe-results",
+      title: "Tool evidence returns into the next model call",
+      explanation:
+        "Typed tool results flow back through the runtime. The model receives them as context for the next decision, and the loop repeats until exit criteria are met.",
+      durationMs: 10000,
+      easing: "ease-in-out",
+      accent: "generation",
+      dependencies: ["execute-retrieve-knowledge"],
+    },
   ],
 };
 
 const recoverScene: DemoScene<AgentEventKind> = {
   id: "recover",
   act: 5,
-  title: "Evaluate + retry: keep attempts separate",
-  shortTitle: "Evaluate + retry",
+  title: "Timeouts + retries: keep attempts separate",
+  shortTitle: "Timeouts + retries",
   summary: "A timeout ends one call; a retry starts another.",
   events: [
     {
@@ -221,9 +232,9 @@ const governScene: DemoScene<AgentEventKind> = {
     {
       id: "govern-publish-outcome",
       kind: "publish-outcome",
-      title: "One verified outcome fans out three ways",
+      title: "One verified outcome fans out",
       explanation:
-        "Returning a response, writing verified memory, and recording trace telemetry are separate contracts with separate policies.",
+        "Returning a response and writing verified memory are separate contracts. Trace telemetry is recorded within the outcome boundary under its own policy.",
       durationMs: 9000,
       easing: "ease-out",
       accent: "evidence",
@@ -246,7 +257,7 @@ export const agentPhaseStories: Readonly<Record<AgentPhase, DemoStory<AgentEvent
   prepare: { id: "agent-input-context", title: "How AI agents work / Input + context", scenes: [prepareScene] },
   route: { id: "agent-models-agents", title: "How AI agents work / Models + agents", scenes: [routeScene] },
   execute: { id: "agent-tools", title: "How AI agents work / Tools", scenes: [executeScene] },
-  recover: { id: "agent-evaluate-retry", title: "How AI agents work / Evaluate + retry", scenes: [recoverScene] },
+  recover: { id: "agent-evaluate-retry", title: "How AI agents work / Timeouts + retries", scenes: [recoverScene] },
   govern: { id: "agent-govern-return", title: "How AI agents work / Govern + return", scenes: [governScene] },
 };
 

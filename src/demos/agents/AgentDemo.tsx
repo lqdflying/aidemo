@@ -82,12 +82,12 @@ function AgentPhaseWorkspace({
         canGoNext={player.canGoNext}
         canGoPrevious={player.canGoPrevious}
         loopLabel={holdsFinalFlow
-          ? "System overview — pauses at end"
+          ? "System overview — holds the live flow"
           : stopsAfterLesson
             ? "Lesson complete → Next lesson"
             : "Lesson replays until paused"}
         loopTitle={holdsFinalFlow
-          ? "The system tour runs once, then pauses so you can inspect or advance"
+          ? "The system tour runs once, then holds the live flow so you can inspect or advance"
           : stopsAfterLesson
             ? "This lesson pauses after the final step — press Next lesson to continue"
             : "This lesson restarts after its final step until you pause or advance"}

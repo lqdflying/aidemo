@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { validateStory } from "../../framework/story";
-import { isClosedControlCycle } from "./agent-diagram-model";
+import {
+  buildAgentFlowLegViews,
+  getAgentLessonStep,
+  isClosedControlCycle,
+} from "./agent-diagram-model";
 import { agentGroupOrder } from "./agent-knowledge";
 import { agentComponentBlueprints, agentGroupBlueprints } from "./agent-platform-details";
 import { agentPhases } from "./agent-routing";
@@ -20,7 +24,7 @@ describe("generic agent architecture model", () => {
     expect(model.components).toHaveLength(24);
     expect(model.relationships).toHaveLength(12);
     expect(model.concepts).toHaveLength(3);
-    expect(model.trace).toHaveLength(16);
+    expect(model.trace).toHaveLength(17);
 
     const declaredIds = model.groups.flatMap(({ componentIds }) => componentIds);
     const componentIds = model.components.map(({ id }) => id);
@@ -55,6 +59,29 @@ describe("generic agent architecture model", () => {
 
     expect(model.cycles).toHaveLength(1);
     expect(isClosedControlCycle(model)).toBe(true);
+  });
+
+  it("animates every relationship in a lesson or the system overview", () => {
+    const model = simulateAgentArchitecture().data;
+    const lessonRelationshipIds = new Set(
+      model.trace.flatMap(({ contractLegs }) =>
+        contractLegs.map(({ relationshipId }) => relationshipId),
+      ),
+    );
+    const overviewRelationshipIds = new Set(
+      buildAgentFlowLegViews(
+        model,
+        getAgentLessonStep(model, "show-harness"),
+      ).map(({ relationship }) => relationship.id),
+    );
+    const animatedRelationshipIds = new Set([
+      ...lessonRelationshipIds,
+      ...overviewRelationshipIds,
+    ]);
+
+    expect([...animatedRelationshipIds].sort()).toEqual(
+      model.relationships.map(({ id }) => id).slice().sort(),
+    );
   });
 
   it("keeps concept takeaways complete", () => {
@@ -142,7 +169,7 @@ describe("agent architecture stories", () => {
 
     expect(traceKinds).toEqual(storyKinds);
     expect(agentStory.scenes.flatMap(({ events }) => events)
-      .reduce((total, event) => total + event.durationMs, 0)).toBe(147_000);
+      .reduce((total, event) => total + event.durationMs, 0)).toBe(157_000);
   });
 
   it("preserves the six teachable deep-link lessons", () => {
@@ -151,7 +178,7 @@ describe("agent architecture stories", () => {
     expect(agentPhaseStories.prepare.scenes[0]?.shortTitle).toBe("Input + context");
     expect(agentPhaseStories.route.scenes[0]?.shortTitle).toBe("Models + agents");
     expect(agentPhaseStories.execute.scenes[0]?.shortTitle).toBe("Tools");
-    expect(agentPhaseStories.recover.scenes[0]?.shortTitle).toBe("Evaluate + retry");
+    expect(agentPhaseStories.recover.scenes[0]?.shortTitle).toBe("Timeouts + retries");
     expect(agentPhaseStories.govern.scenes[0]?.shortTitle).toBe("Govern + return");
   });
 });

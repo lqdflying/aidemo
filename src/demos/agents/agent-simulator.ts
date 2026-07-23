@@ -8,7 +8,6 @@ import type {
   AgentLessonStep,
   AgentRelationship,
   AgentRelationshipId,
-  AgentRuntimeAdapter,
   AgentRuntimeResult,
 } from "./agent-types";
 
@@ -339,14 +338,15 @@ const trace: readonly AgentLessonStep[] = [
   { number: 6, eventKind: "delegate-workers", label: "Fan work out to bounded workers", summary: "One coordinator remains the hub while multiple workers own separate tasks.", topology: "star", patternLabel: "Hub / star", activeComponentIds: ["coordinator", "task-scheduler", "worker-a", "worker-b", "worker-c"], contractLegs: [leg("runtime-to-agents"), leg("runtime-to-agents", "return")], state: "active" },
   { number: 7, eventKind: "call-function-tool", label: "Call a typed function", summary: "A worker sends validated arguments and waits for a typed result or error.", topology: "pair-loop", patternLabel: "Tool request / return", activeComponentIds: ["worker-a", "function-tool", "data-source"], contractLegs: [leg("agents-to-tools"), leg("agents-to-tools", "return")], state: "active" },
   { number: 8, eventKind: "retrieve-knowledge", label: "Retrieve grounded knowledge", summary: "Retrieval returns evidence and provenance before a model uses it as context.", topology: "pair-loop", patternLabel: "Retrieval request / return", activeComponentIds: ["worker-b", "retrieval-tool", "data-source"], contractLegs: [leg("agents-to-tools"), leg("agents-to-tools", "return")], state: "active" },
-  { number: 9, eventKind: "start-tool-attempt", label: "Start attempt 1", summary: "The first bounded tool request is running; no result exists yet.", topology: "retry", patternLabel: "Attempt 1 · request", activeComponentIds: ["worker-c", "function-tool"], contractLegs: [leg("agents-to-tools")], state: "active", attempt: 1, attemptStatuses: ["running", "waiting"] },
-  { number: 10, eventKind: "record-tool-failure", label: "Record the timeout", summary: "Attempt 1 reaches its deadline with no result and cannot be treated as evidence.", topology: "retry", patternLabel: "Attempt 1 · timed out", activeComponentIds: ["worker-c", "function-tool"], contractLegs: [leg("agents-to-tools")], state: "failed", attempt: 1, attemptStatuses: ["timed-out", "waiting"] },
-  { number: 11, eventKind: "retry-tool-call", label: "Start a separate bounded retry", summary: "Attempt 2 is a new request with its own identity and narrowed contract.", topology: "retry", patternLabel: "Attempt 2 · request", activeComponentIds: ["worker-c", "function-tool"], contractLegs: [leg("agents-to-tools")], state: "retry", attempt: 2, attemptStatuses: ["timed-out", "running"] },
-  { number: 12, eventKind: "accept-tool-result", label: "Accept the returned result", summary: "Attempt 2 succeeds; only now may its typed result advance the run.", topology: "retry", patternLabel: "Attempt 2 · returned", activeComponentIds: ["worker-c", "function-tool", "coordinator"], contractLegs: [leg("agents-to-tools", "return")], state: "recovered", attempt: 2, attemptStatuses: ["timed-out", "returned"] },
-  { number: 13, eventKind: "review-decision", label: "Evaluate before authority", summary: "Policy, evaluation, and human review receive a scoped proposal before sensitive work can advance.", topology: "sequence", patternLabel: "Governed review", activeComponentIds: ["worker-a", "policy-guard", "output-evaluator", "human-approval"], contractLegs: [leg("agents-to-governance")], state: "active" },
-  { number: 14, eventKind: "close-revision-loop", label: "Return revision constraints", summary: "A revision decision returns through runtime and closes the control cycle on the worker.", topology: "cycle", patternLabel: "Control / verification cycle", activeComponentIds: ["worker-a", "policy-guard", "output-evaluator", "human-approval", "coordinator", "task-scheduler"], contractLegs: cycles[0]!.legs, state: "active" },
-  { number: 15, eventKind: "allow-bounded-action", label: "Use only scoped authority", summary: "An approved action follows a one-way path through the exact permitted tool to an outcome.", topology: "sequence", patternLabel: "Governed action sequence", activeComponentIds: ["human-approval", "action-tool", "response-publisher"], contractLegs: [leg("governance-to-tools"), leg("tools-to-outcome")], state: "active" },
-  { number: 16, eventKind: "publish-outcome", label: "Publish the verified outcome", summary: "One accepted outcome fans out separately to the requester, memory, and telemetry.", topology: "fan-out", patternLabel: "Outcome fan-out", activeComponentIds: ["response-publisher", "memory-writer", "trace-telemetry", "long-term-memory", "user-application"], contractLegs: [leg("outcome-to-context"), leg("outcome-to-entry")], state: "active", focusTarget: { kind: "group", groupId: "outcome" } },
+  { number: 9, eventKind: "observe-results", label: "Feed tool results into the next model call", summary: "Typed tool evidence returns through the runtime so the model can decide the next bounded step.", topology: "pair-loop", patternLabel: "Observe / decide loop", activeComponentIds: ["coordinator", "working-context", "general-model", "worker-a", "worker-b"], contractLegs: [leg("runtime-to-models"), leg("runtime-to-models", "return")], state: "active" },
+  { number: 10, eventKind: "start-tool-attempt", label: "Start attempt 1", summary: "The first bounded tool request is running; no result exists yet.", topology: "retry", patternLabel: "Attempt 1 · request", activeComponentIds: ["worker-c", "function-tool"], contractLegs: [leg("agents-to-tools")], state: "active", attempt: 1, attemptStatuses: ["running", "waiting"] },
+  { number: 11, eventKind: "record-tool-failure", label: "Record the timeout", summary: "Attempt 1 reaches its deadline with no result and cannot be treated as evidence.", topology: "retry", patternLabel: "Attempt 1 · timed out", activeComponentIds: ["worker-c", "function-tool"], contractLegs: [leg("agents-to-tools")], state: "failed", attempt: 1, attemptStatuses: ["timed-out", "waiting"] },
+  { number: 12, eventKind: "retry-tool-call", label: "Start a separate bounded retry", summary: "Attempt 2 is a new request with its own identity and narrowed contract.", topology: "retry", patternLabel: "Attempt 2 · request", activeComponentIds: ["worker-c", "function-tool"], contractLegs: [leg("agents-to-tools")], state: "retry", attempt: 2, attemptStatuses: ["timed-out", "running"] },
+  { number: 13, eventKind: "accept-tool-result", label: "Accept the returned result", summary: "Attempt 2 succeeds; only now may its typed result advance the run.", topology: "retry", patternLabel: "Attempt 2 · returned", activeComponentIds: ["worker-c", "function-tool", "coordinator"], contractLegs: [leg("agents-to-tools", "return")], state: "recovered", attempt: 2, attemptStatuses: ["timed-out", "returned"] },
+  { number: 14, eventKind: "review-decision", label: "Evaluate before authority", summary: "Policy, evaluation, and human review receive a scoped proposal before sensitive work can advance.", topology: "sequence", patternLabel: "Governed review", activeComponentIds: ["worker-a", "policy-guard", "output-evaluator", "human-approval"], contractLegs: [leg("agents-to-governance")], state: "active" },
+  { number: 15, eventKind: "close-revision-loop", label: "Return revision constraints", summary: "A revision decision returns through runtime and closes the control cycle on the worker.", topology: "cycle", patternLabel: "Control / verification cycle", activeComponentIds: ["worker-a", "policy-guard", "output-evaluator", "human-approval", "coordinator", "task-scheduler"], contractLegs: cycles[0]!.legs, state: "active" },
+  { number: 16, eventKind: "allow-bounded-action", label: "Use only scoped authority", summary: "An approved action follows a one-way path through the exact permitted tool to an outcome.", topology: "sequence", patternLabel: "Governed action sequence", activeComponentIds: ["human-approval", "action-tool", "trace-telemetry"], contractLegs: [leg("governance-to-tools"), leg("tools-to-outcome")], state: "active" },
+  { number: 17, eventKind: "publish-outcome", label: "Publish the verified outcome", summary: "One accepted outcome fans out separately to the requester and memory, while telemetry is recorded within the outcome boundary.", topology: "fan-out", patternLabel: "Outcome fan-out", activeComponentIds: ["response-publisher", "memory-writer", "trace-telemetry", "long-term-memory", "user-application"], contractLegs: [leg("outcome-to-context"), leg("outcome-to-entry")], state: "active", focusTarget: { kind: "group", groupId: "outcome" } },
 ];
 
 const architectureModel: AgentArchitectureModel = {
@@ -365,13 +365,3 @@ export function simulateAgentArchitecture(): AgentRuntimeResult {
     adapterMode: "simulation",
   };
 }
-
-export const agentRuntimeAdapter: AgentRuntimeAdapter = {
-  mode: "simulation",
-  run(_input, signal) {
-    if (signal?.aborted) {
-      return Promise.reject(new DOMException("The architecture simulation was aborted.", "AbortError"));
-    }
-    return Promise.resolve(simulateAgentArchitecture());
-  },
-};

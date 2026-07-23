@@ -207,7 +207,7 @@ export const agentOpenSourceCatalog = {
     maintenance: "active",
     releaseChannel: "stable",
     reviewedOn: AGENT_OPEN_SOURCE_REVIEW_DATE,
-    officialUrl: "https://kserve.github.io/website/latest/",
+    officialUrl: "https://kserve.github.io/website/",
   },
   "langchain-mcp-adapters": {
     name: "LangChain MCP Adapters",
@@ -267,7 +267,7 @@ export const agentOpenSourceCatalog = {
     maintenance: "active",
     releaseChannel: "stable",
     reviewedOn: AGENT_OPEN_SOURCE_REVIEW_DATE,
-    officialUrl: "https://docs.llamaindex.ai/en/stable/",
+    officialUrl: "https://developers.llamaindex.ai/python/framework/",
   },
   mcp: {
     name: "MCP protocol + stable official SDK",
@@ -387,7 +387,7 @@ export const agentOpenSourceCatalog = {
     maintenance: "active",
     releaseChannel: "stable",
     reviewedOn: AGENT_OPEN_SOURCE_REVIEW_DATE,
-    officialUrl: "https://docs.pydantic.dev/latest/",
+    officialUrl: "https://pydantic.dev/docs/validation/latest/get-started/",
   },
   "pydantic-ai": {
     name: "Pydantic AI",
@@ -1414,7 +1414,7 @@ export const agentComponentOpenSourceRecommendations = {
   "action-tool": recommendation(agentComponentArchitectureRecommendations["action-tool"], agentComponentPythonEcosystem["action-tool"], "Durable write execution requires Temporal's server-level guarantees for idempotency, compensation, and state reconciliation."),
   "policy-guard": recommendation(agentComponentArchitectureRecommendations["policy-guard"], agentComponentPythonEcosystem["policy-guard"], "Sub-millisecond deterministic policy evaluation requires OPA's Go-based Rego engine; Python bindings exist but do not own the runtime."),
   "output-evaluator": recommendation(agentComponentArchitectureRecommendations["output-evaluator"], agentComponentPythonEcosystem["output-evaluator"]),
-  "human-approval": recommendation(agentComponentArchitectureRecommendations["human-approval"], agentComponentPythonEcosystem["human-approval"]),
+  "human-approval": recommendation(agentComponentArchitectureRecommendations["human-approval"], agentComponentPythonEcosystem["human-approval"], "Durable approval waits that outlive a single agent process require Temporal's server-level timers, signals, and recovery beyond Python's process boundary."),
   "response-publisher": recommendation(agentComponentArchitectureRecommendations["response-publisher"], agentComponentPythonEcosystem["response-publisher"], "Durable async delivery with acknowledgement, replay, and dead-letter requires infrastructure-level broker performance beyond Python's runtime capabilities."),
   "memory-writer": recommendation(agentComponentArchitectureRecommendations["memory-writer"], agentComponentPythonEcosystem["memory-writer"], "PostgreSQL provides transactional write guarantees and ACID durability for governed memory records that no Python-native store can replace."),
   "trace-telemetry": recommendation(agentComponentArchitectureRecommendations["trace-telemetry"], agentComponentPythonEcosystem["trace-telemetry"], "OpenTelemetry is a cross-language observability standard; its Python SDK is first-class but the specification is intentionally language-neutral."),

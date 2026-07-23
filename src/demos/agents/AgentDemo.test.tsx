@@ -72,6 +72,14 @@ describe("AgentDemo architecture explorer", () => {
     expect(container.querySelector(".agent-architecture-atlas")).not.toBeInTheDocument();
     expect(container.querySelector(".agent-topology-focus")).not.toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/CloudOps|checkout|remediation|Cloud Control/i);
+
+    const inspectChip = screen.getByRole("button", { name: "Inspect: Orchestrator" });
+    fireEvent.click(inspectChip);
+    expect(screen.getByRole("dialog", { name: "Orchestrator" })).toBeInTheDocument();
+    expect(inspectChip).toHaveAttribute("aria-pressed", "true");
+    expect(within(screen.getByRole("dialog", { name: "Orchestrator" }))
+      .getByRole("button", { name: "Close group details" }))
+      .toHaveFocus();
   });
 
   it("keeps the System lesson moving through a group tour and a live end-to-end flow", () => {
@@ -87,9 +95,9 @@ describe("AgentDemo architecture explorer", () => {
     expect(map).toHaveAttribute("data-flow-schedule", "system-overview");
     expect(container.querySelectorAll(
       '[data-flow-schedule="system-overview"][data-flow-id]',
-    )).toHaveLength(13);
+    )).toHaveLength(14);
     expect(container.querySelectorAll(
-      '[data-flow-schedule="system-overview"][data-flow-phase="11"][data-flow-id]',
+      '[data-flow-schedule="system-overview"][data-flow-phase="12"][data-flow-id]',
     )).toHaveLength(2);
     expect(container.querySelector(".agent-stage"))
       .toHaveAttribute("data-playback", "paused");
@@ -100,9 +108,9 @@ describe("AgentDemo architecture explorer", () => {
     const { container } = renderAgentDemo();
     const map = screen.getByRole("region", { name: "Interactive AI agent system map" });
 
-    expect(screen.getByText("System overview — pauses at end")).toHaveAttribute(
+    expect(screen.getByText("System overview — holds the live flow")).toHaveAttribute(
       "title",
-      "The system tour runs once, then pauses so you can inspect or advance",
+      "The system tour runs once, then holds the live flow so you can inspect or advance",
     );
     fireEvent.click(screen.getByRole("button", { name: "Play animation" }));
     act(() => vi.advanceTimersByTime(9_000));
@@ -201,9 +209,9 @@ describe("AgentDemo architecture explorer", () => {
     setLocation("/demos/agent-orchestration/recover");
     const { unmount } = renderAgentDemo();
 
-    expect(screen.getByText("Evaluate + retry: keep attempts separate")).toBeInTheDocument();
+    expect(screen.getByText("Timeouts + retries: keep attempts separate")).toBeInTheDocument();
     const timeline = screen.getByRole("navigation", { name: "AI agent system lessons" });
-    expect(within(timeline).getByRole("button", { name: /Evaluate \+ retry/ }))
+    expect(within(timeline).getByRole("button", { name: /Timeouts \+ retries/ }))
       .toHaveAttribute("aria-current", "page");
 
     unmount();
@@ -213,7 +221,7 @@ describe("AgentDemo architecture explorer", () => {
     document.body.append(replacementRoot);
     setLocation("/demos/agent-orchestration/adapt");
     renderAgentDemo();
-    expect(screen.getByText("Evaluate + retry: keep attempts separate")).toBeInTheDocument();
+    expect(screen.getByText("Timeouts + retries: keep attempts separate")).toBeInTheDocument();
   });
 
   it("updates the URL and lesson from the shared timeline", () => {
@@ -361,7 +369,7 @@ describe("AgentDemo architecture explorer", () => {
     }
     expect(within(toolsOpenSource).getByText(/keep every dependency on its current stable release/i))
       .toBeInTheDocument();
-    fireEvent.click(within(groupDialog).getByRole("button", { name: "Close component details" }));
+    fireEvent.click(within(groupDialog).getByRole("button", { name: "Close group details" }));
 
     fireEvent.click(screen.getByRole("button", { name: "Agent run loop" }));
     const conceptDialog = screen.getByRole("dialog", { name: "Agent run loop" });
@@ -375,6 +383,8 @@ describe("AgentDemo architecture explorer", () => {
     expect(within(conceptDialog).queryByRole("region", {
       name: "Build with open source",
     })).not.toBeInTheDocument();
+    expect(within(conceptDialog).getByRole("button", { name: "Close concept details" }))
+      .toBeInTheDocument();
   });
 
   it("shows the agent harness as a controlled responsibility-boundary diagram", () => {
@@ -460,9 +470,24 @@ describe("AgentDemo architecture explorer", () => {
     const closeButton = within(dialog).getByRole("button", {
       name: "Close component details",
     });
+    const implementationDetails = dialog.querySelector(
+      ".agent-detail-dialog__implementation",
+    );
+    const implementationSummary = implementationDetails?.querySelector("summary");
     const overlay = dialog.closest<HTMLElement>("[data-agent-detail-overlay]");
+    if (!(implementationDetails instanceof HTMLDetailsElement)) {
+      throw new Error("The collapsed implementation details section is missing.");
+    }
+    if (!(implementationSummary instanceof HTMLElement)) {
+      throw new Error("The implementation details summary is missing.");
+    }
     if (!overlay) throw new Error("The component dialog overlay is missing.");
 
+    expect(implementationDetails.open).toBe(false);
+    expect(closeButton).toHaveFocus();
+
+    fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+    expect(implementationSummary).toHaveFocus();
     fireEvent.keyDown(document, { key: "Tab" });
     expect(closeButton).toHaveFocus();
     fireEvent.click(dialog);

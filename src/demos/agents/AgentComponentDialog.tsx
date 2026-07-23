@@ -24,8 +24,37 @@ const FOCUSABLE_ELEMENT_SELECTOR = [
   "input:not([disabled])",
   "select:not([disabled])",
   "textarea:not([disabled])",
+  "summary",
   "[tabindex]:not([tabindex='-1'])",
 ].join(",");
+
+const closeLabelByKind: Readonly<Record<AgentDetailTarget["kind"], string>> = {
+  component: "Close component details",
+  group: "Close group details",
+  concept: "Close concept details",
+};
+
+function isFocusableInDialog(element: HTMLElement): boolean {
+  if (element.getAttribute("aria-hidden") === "true") return false;
+
+  const ownDetails = element.tagName === "SUMMARY" && element.parentElement?.tagName === "DETAILS"
+    ? element.parentElement
+    : null;
+
+  let ancestor: HTMLElement | null = element.parentElement;
+  while (ancestor) {
+    if (ancestor.tagName === "DETAILS" && !(ancestor as HTMLDetailsElement).open) {
+      if (ancestor === ownDetails) {
+        ancestor = ancestor.parentElement;
+        continue;
+      }
+      return false;
+    }
+    ancestor = ancestor.parentElement;
+  }
+
+  return true;
+}
 
 function ConceptTakeaways({
   takeaways,
@@ -98,7 +127,7 @@ export function AgentComponentDialog({
 
       const focusableElements = Array.from(
         dialogElement.querySelectorAll<HTMLElement>(FOCUSABLE_ELEMENT_SELECTOR),
-      ).filter((element) => element.getAttribute("aria-hidden") !== "true");
+      ).filter(isFocusableInDialog);
       const firstFocusableElement = focusableElements[0];
       const lastFocusableElement = focusableElements.at(-1);
 
@@ -173,7 +202,7 @@ export function AgentComponentDialog({
             <p id={descriptionId}>{detail.summary}</p>
           </div>
           <button
-            aria-label="Close component details"
+            aria-label={closeLabelByKind[target.kind]}
             className="agent-detail-dialog__close"
             onClick={() => onCloseRef.current()}
             ref={closeButtonRef}

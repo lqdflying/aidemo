@@ -17,6 +17,7 @@ import {
   buildAgentFlowLegViews,
   getActiveGroupIds,
   getAgentDetailTargetKey,
+  getAgentDetailTargetLabel,
   getAgentGroup,
   getTopologyDescription,
   type AgentFlowLegView,
@@ -677,6 +678,10 @@ export function AgentArchitectureMap({
 }: AgentArchitectureMapProps): React.JSX.Element {
   const TopologyIcon = topologyIcons[step.topology];
   const selectedKey = getAgentDetailTargetKey(selectedTarget);
+  const focusTarget = step.focusTarget;
+  const focusTargetSelected = focusTarget
+    ? selectedKey === getAgentDetailTargetKey(focusTarget)
+    : false;
   const systemMotion = step.eventKind === "map-components"
     ? "group-tour"
     : step.eventKind === "show-harness"
@@ -703,6 +708,18 @@ export function AgentArchitectureMap({
           <small>Focus · {agentLessonStateLabels[step.state]}</small>
           <h3>{step.label}</h3>
           <p>{step.summary}</p>
+          {focusTarget && (
+            <button
+              aria-haspopup="dialog"
+              aria-pressed={focusTargetSelected}
+              className="agent-lesson-card__inspect"
+              onClick={(event) => onSelectTarget(focusTarget, event.currentTarget)}
+              type="button"
+            >
+              <Info aria-hidden="true" />
+              Inspect: {getAgentDetailTargetLabel(model, focusTarget)}
+            </button>
+          )}
         </div>
         <p className="agent-lesson-card__reading">{getTopologyDescription(step.topology)}</p>
       </header>

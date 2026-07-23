@@ -151,7 +151,7 @@ describe("agent open-source implementation catalog", () => {
     expect(agentOpenSourceCatalog["llama-index"]).toMatchObject({
       name: "LlamaIndex Workflows",
       license: "MIT",
-      officialUrl: "https://docs.llamaindex.ai/en/stable/",
+      officialUrl: "https://developers.llamaindex.ai/python/framework/",
     });
     expect(agentOpenSourceCatalog.ragas.name).toContain("Vibrant Labs");
     expect(agentOpenSourceCatalog["opentelemetry-python"].description)

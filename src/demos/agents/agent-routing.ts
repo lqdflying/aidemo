@@ -20,7 +20,7 @@ export const agentPhaseLabels: Readonly<Record<AgentPhase, string>> = {
   prepare: "Input + context",
   route: "Models + agents",
   execute: "Tools",
-  recover: "Evaluate + retry",
+  recover: "Timeouts + retries",
   govern: "Govern + return",
 };
 

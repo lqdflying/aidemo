@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 
 import type { PlaybackStatus } from "../../framework/playback";
 import type { StoryPosition } from "../../framework/story";
@@ -20,6 +20,11 @@ interface AgentStageProps {
   readonly position: StoryPosition<AgentEventKind>;
 }
 
+interface AgentStageSelection {
+  readonly target: AgentDetailTarget;
+  readonly trigger: HTMLButtonElement;
+}
+
 export function AgentStage({
   model,
   onInspect,
@@ -27,21 +32,19 @@ export function AgentStage({
   playbackStatus,
   position,
 }: AgentStageProps): React.JSX.Element {
-  const [selectedTarget, setSelectedTarget] = useState<AgentDetailTarget | null>(null);
-  const returnFocusRef = useRef<HTMLButtonElement | null>(null);
+  const [selection, setSelection] = useState<AgentStageSelection | null>(null);
   const step = getAgentLessonStep(model, position.event.kind);
 
   const selectTarget = useCallback((
     target: AgentDetailTarget,
     trigger: HTMLButtonElement,
   ): void => {
-    returnFocusRef.current = trigger;
-    setSelectedTarget(target);
+    setSelection({ target, trigger });
     onInspect();
   }, [onInspect]);
 
   const closeInspector = useCallback((): void => {
-    setSelectedTarget(null);
+    setSelection(null);
   }, []);
 
   return (
@@ -62,7 +65,7 @@ export function AgentStage({
           <AgentArchitectureMap
             model={model}
             onSelectTarget={selectTarget}
-            selectedTarget={selectedTarget}
+            selectedTarget={selection?.target ?? null}
             step={step}
           />
         </div>
@@ -70,8 +73,8 @@ export function AgentStage({
       <AgentComponentDialog
         model={model}
         onClose={closeInspector}
-        returnFocusElement={returnFocusRef.current}
-        target={selectedTarget}
+        returnFocusElement={selection?.trigger ?? null}
+        target={selection?.target ?? null}
       />
     </section>
   );

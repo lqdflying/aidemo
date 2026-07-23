@@ -83,14 +83,14 @@ describe("App navigation", () => {
 
     fireEvent.click(
       screen.getByRole("link", {
-        name: "Start How AI agents work(designing) walkthrough",
+        name: "Start How AI agents work walkthrough",
       }),
     );
 
     expect(window.location.pathname).toBe("/demos/agent-orchestration");
     expect(
       screen.getByRole("heading", {
-        name: "How AI agents work(designing)",
+        name: "How AI agents work",
       }),
     ).toBeInTheDocument();
   });

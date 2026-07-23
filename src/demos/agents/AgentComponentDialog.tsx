@@ -1,4 +1,4 @@
-import { Lightbulb, TriangleAlert, X } from "lucide-react";
+import { ChevronRight, Lightbulb, TriangleAlert, X } from "lucide-react";
 import { useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
 
@@ -188,10 +188,17 @@ export function AgentComponentDialog({
             <ConceptTakeaways takeaways={detail.takeaways} />
           </div>
         ) : detail.kind === "platform" ? (
-          <AgentPlatformBlueprint
-            recommendation={detail.openSourceRecommendation}
-            spec={detail.blueprint}
-          />
+          <details className="agent-detail-dialog__implementation">
+            <summary>
+              <ChevronRight aria-hidden="true" />
+              <span>Implementation details</span>
+              <small>Platform blueprint and open-source reference stack</small>
+            </summary>
+            <AgentPlatformBlueprint
+              recommendation={detail.openSourceRecommendation}
+              spec={detail.blueprint}
+            />
+          </details>
         ) : null}
       </div>
     </div>,

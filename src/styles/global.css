@@ -93,7 +93,7 @@ input:focus-visible {
 }
 
 .app-shell--agents {
-  width: min(100% - 24px, 1520px);
+  width: min(100% - 24px, 1320px);
 }
 
 .site-header {

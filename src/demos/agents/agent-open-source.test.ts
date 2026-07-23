@@ -208,6 +208,22 @@ describe("agent open-source implementation catalog", () => {
       .toMatch(/Pydantic AI owns the runtime/i);
   });
 
+  it("requires an explicit exception reason when architecture preferred is not Python-native", () => {
+    const allRecommendations = [
+      ...Object.entries(agentGroupOpenSourceRecommendations),
+      ...Object.entries(agentComponentOpenSourceRecommendations),
+    ];
+
+    for (const [key, recommendation] of allRecommendations) {
+      const preferredSolution = agentOpenSourceCatalog[recommendation.preferred.solutionId];
+      const isPythonNative = (preferredSolution.languages as readonly string[]).includes("Python");
+      if (!isPythonNative) {
+        expect(recommendation.architectureExceptionReason, `${key}: non-Python preferred "${preferredSolution.name}" must have architectureExceptionReason`).toBeTruthy();
+        expect(recommendation.architectureExceptionReason!.length).toBeGreaterThan(20);
+      }
+    }
+  });
+
   it("keeps Python durability choices visible without presenting Temporal as Python-native", () => {
     const allRecommendations = [
       ...Object.values(agentGroupOpenSourceRecommendations),

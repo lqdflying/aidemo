@@ -215,8 +215,8 @@ export const agentGroupBlueprints = {
   },
   runtime: {
     kind: "control-loop",
-    title: "Agent runtime",
-    summary: "A durable control plane owns progress around every model, worker, and tool call.",
+    title: "Orchestrator",
+    summary: "A durable orchestration layer owns progress around every model, worker, and tool call. Sometimes called the agent runtime.",
     caption: "The coordinator advances explicit run state. Models propose work; application code owns budgets, dependencies, retries, cancellation, and exit.",
     motion: "loop",
     stages: [

@@ -23,9 +23,9 @@ const groups: readonly AgentComponentGroup[] = [
   },
   {
     id: "runtime",
-    label: "Agent runtime",
-    shortLabel: "Runtime",
-    summary: "The software that admits work, coordinates steps, and owns run state.",
+    label: "Orchestrator",
+    shortLabel: "Orchestrator",
+    summary: "The orchestration layer that admits requests, coordinates agent work, and owns run lifecycle. Also known as the agent runtime.",
     accent: "generation",
     componentIds: ["input-gateway", "coordinator", "task-scheduler"],
   },

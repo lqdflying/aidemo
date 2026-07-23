@@ -75,22 +75,22 @@ function AgentPhaseWorkspace({
         <WalkthroughExplanation
           adapterMode={runtimeResult.adapterMode}
           event={player.position.event}
-          footerLabel="Read the topology"
+          footerLabel="Follow the flow"
         />
       </div>
       <WalkthroughControls
         canGoNext={player.canGoNext}
         canGoPrevious={player.canGoPrevious}
         loopLabel={holdsFinalFlow
-          ? "Final flow stays live"
+          ? "System overview — pauses at end"
           : stopsAfterLesson
-            ? "Stops after this lesson"
-            : "Guided lesson loop"}
+            ? "Lesson complete → Next lesson"
+            : "Lesson replays until paused"}
         loopTitle={holdsFinalFlow
-          ? "The group tour runs once, then the full system flow continues until paused or restarted"
+          ? "The system tour runs once, then pauses so you can inspect or advance"
           : stopsAfterLesson
-            ? "This lesson stops after its final step"
-            : "This lesson restarts after its final step"}
+            ? "This lesson pauses after the final step — press Next lesson to continue"
+            : "This lesson restarts after its final step until you pause or advance"}
         nextPhaseLabel={nextPhaseLabel}
         onNext={handleNext}
         onNextPhase={onNextPhase}
@@ -135,8 +135,8 @@ export function AgentDemo(): React.JSX.Element {
             <ArrowLeft aria-hidden="true" size={18} />All demos
           </InternalLink>
           <div className="walkthrough-hero__title">
-            <p className="eyebrow">Interactive architecture explorer</p>
-            <h1>How AI agents work(designing)</h1>
+            <p className="eyebrow">Guided system walkthrough</p>
+            <h1>How AI agents work</h1>
           </div>
         </div>
         <div className="walkthrough-hero__summary">

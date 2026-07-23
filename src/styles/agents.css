@@ -42,7 +42,7 @@
     linear-gradient(rgba(211, 220, 231, 0.2) 1px, transparent 1px),
     linear-gradient(90deg, rgba(211, 220, 231, 0.2) 1px, transparent 1px),
     #fafbfd;
-  background-size: 28px 28px;
+  background-size: 36px 36px;
 }
 
 .agent-stage__topline {
@@ -374,19 +374,19 @@
 .agent-flow-packet--trail {
   stroke-width: 5;
   stroke-dasharray: 11 89;
-  filter: drop-shadow(0 0 3px rgba(42, 113, 199, 0.42));
+  filter: drop-shadow(0 0 2px rgba(42, 113, 199, 0.25));
 }
 
 [data-flow-tone="response"] > .agent-flow-packet--trail {
-  filter: drop-shadow(0 0 3px rgba(37, 132, 99, 0.42));
+  filter: drop-shadow(0 0 2px rgba(37, 132, 99, 0.25));
 }
 
 [data-state="failed"] > .agent-flow-packet--trail {
-  filter: drop-shadow(0 0 3px rgba(181, 72, 72, 0.42));
+  filter: drop-shadow(0 0 2px rgba(181, 72, 72, 0.25));
 }
 
 [data-state="retry"] > .agent-flow-packet--trail {
-  filter: drop-shadow(0 0 3px rgba(185, 116, 40, 0.42));
+  filter: drop-shadow(0 0 2px rgba(185, 116, 40, 0.25));
 }
 
 .agent-flow-packet--head {
@@ -563,7 +563,7 @@
   fill: #fff;
   stroke: var(--agent-failed);
   stroke-width: 2.4;
-  filter: drop-shadow(0 3px 5px rgba(181, 72, 72, 0.22));
+  filter: drop-shadow(0 2px 4px rgba(181, 72, 72, 0.14));
   vector-effect: non-scaling-stroke;
 }
 
@@ -574,24 +574,24 @@
 
 .agent-group-card[data-active="true"] {
   border-color: #abc6e5;
-  box-shadow: 0 9px 24px rgba(42, 113, 199, 0.11);
+  box-shadow: 0 4px 12px rgba(42, 113, 199, 0.08);
   opacity: 1;
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 
 .agent-group-card[data-accent="input"][data-active="true"] {
   border-color: #dec29e;
-  box-shadow: 0 9px 24px rgba(185, 116, 40, 0.1);
+  box-shadow: 0 4px 12px rgba(185, 116, 40, 0.07);
 }
 
 .agent-group-card[data-accent="generation"][data-active="true"] {
   border-color: #cbb9e8;
-  box-shadow: 0 9px 24px rgba(120, 84, 184, 0.1);
+  box-shadow: 0 4px 12px rgba(120, 84, 184, 0.07);
 }
 
 .agent-group-card[data-accent="evidence"][data-active="true"] {
   border-color: #a8d1c1;
-  box-shadow: 0 9px 24px rgba(37, 132, 99, 0.1);
+  box-shadow: 0 4px 12px rgba(37, 132, 99, 0.07);
 }
 
 .agent-group-card__heading {
@@ -968,7 +968,7 @@
   border-radius: 18px;
   color: var(--color-ink);
   background: #fff;
-  box-shadow: 0 28px 90px rgba(16, 28, 46, 0.3);
+  box-shadow: 0 16px 48px rgba(16, 28, 46, 0.14);
   animation: agent-dialog-in 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
@@ -1382,8 +1382,8 @@
   3%,
   11% {
     border-color: #78a9dc;
-    box-shadow: 0 12px 28px rgba(42, 113, 199, 0.2);
-    filter: saturate(1.08);
+    box-shadow: 0 6px 16px rgba(42, 113, 199, 0.1);
+    filter: none;
     outline-color: rgba(42, 113, 199, 0.12);
     outline-offset: 3px;
   }
@@ -1857,7 +1857,7 @@
   z-index: 6;
   top: 0;
   background: rgba(251, 252, 254, 0.97);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(6px);
 }
 
 .agent-detail-dialog[data-detail-kind="component"] .agent-detail-dialog__eyebrow,
@@ -1878,7 +1878,7 @@
     linear-gradient(rgba(211, 220, 231, 0.17) 1px, transparent 1px),
     linear-gradient(90deg, rgba(211, 220, 231, 0.17) 1px, transparent 1px),
     #fafbfd;
-  background-size: 28px 28px;
+  background-size: 36px 36px;
 }
 
 .agent-platform-blueprint {
@@ -3372,6 +3372,115 @@
   font-size: 12px;
 }
 
+.agent-open-source__architecture {
+  margin-top: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: #fafbfc;
+  overflow: clip;
+}
+
+.agent-open-source__architecture summary {
+  display: grid;
+  min-height: 54px;
+  grid-template-columns: 22px minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 13px;
+  color: var(--color-ink);
+  cursor: pointer;
+  list-style: none;
+}
+
+.agent-open-source__architecture summary::-webkit-details-marker {
+  display: none;
+}
+
+.agent-open-source__architecture summary > svg {
+  width: 19px;
+  height: 19px;
+  color: var(--color-muted);
+}
+
+.agent-open-source__architecture summary > span {
+  display: block;
+  min-width: 0;
+}
+
+.agent-open-source__architecture summary strong,
+.agent-open-source__architecture summary small {
+  display: block;
+}
+
+.agent-open-source__architecture summary strong {
+  font-family: "Space Grotesk Variable", sans-serif;
+  font-size: 15px;
+  font-weight: 750;
+  line-height: 1.3;
+}
+
+.agent-open-source__architecture summary small {
+  margin-top: 1px;
+  color: var(--color-ink-soft);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.agent-open-source__architecture summary > b {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 99px;
+  color: var(--color-ink-soft);
+  background: var(--color-border);
+  font-size: 12px;
+}
+
+.agent-open-source__architecture-body {
+  padding: 13px;
+  border-top: 1px solid var(--color-border);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.agent-open-source__architecture-grid {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 9px;
+}
+
+.agent-open-source__exception {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border: 1px solid #e4d9c8;
+  border-radius: 8px;
+  color: var(--color-ink-soft);
+  background: #fffbf5;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.agent-open-source__exception > svg {
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  color: var(--color-input);
+}
+
+.agent-open-source__exception strong {
+  display: block;
+  margin-bottom: 1px;
+  color: var(--color-ink);
+  font-family: "Space Grotesk Variable", sans-serif;
+  font-size: 12px;
+}
+
 @keyframes agent-blueprint-node-settle {
   from {
     opacity: 0.74;
@@ -3753,7 +3862,7 @@
   z-index: 4;
   top: 0;
   background: rgba(251, 252, 254, 0.97);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(6px);
 }
 
 .agent-detail-dialog[data-detail-kind="concept"] .agent-detail-dialog__eyebrow {
@@ -3765,13 +3874,57 @@
   font-size: var(--agent-concept-font-body);
 }
 
+.agent-detail-dialog__implementation {
+  border-top: 1px solid var(--color-border);
+}
+
+.agent-detail-dialog__implementation > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 14px 22px;
+  cursor: pointer;
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-ink-soft);
+  list-style: none;
+}
+
+.agent-detail-dialog__implementation > summary::-webkit-details-marker {
+  display: none;
+}
+
+.agent-detail-dialog__implementation > summary > svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  transition: transform 180ms ease;
+}
+
+.agent-detail-dialog__implementation[open] > summary > svg {
+  transform: rotate(90deg);
+}
+
+.agent-detail-dialog__implementation > summary > span {
+  color: var(--color-ink);
+}
+
+.agent-detail-dialog__implementation > summary > small {
+  margin-left: auto;
+  font-weight: 500;
+  font-size: 11px;
+  color: var(--color-muted);
+}
+
 .agent-detail-dialog__concept-body {
   padding: 20px 22px 24px;
   background:
     linear-gradient(rgba(211, 220, 231, 0.17) 1px, transparent 1px),
     linear-gradient(90deg, rgba(211, 220, 231, 0.17) 1px, transparent 1px),
     #fafbfd;
-  background-size: 28px 28px;
+  background-size: 36px 36px;
 }
 
 .agent-concept-diagram {

@@ -59,7 +59,7 @@ describe("AgentDemo architecture explorer", () => {
   it("renders a generic teaching experience with one stable system canvas", () => {
     const { container } = renderAgentDemo();
 
-    expect(screen.getByRole("heading", { name: "How AI agents work(designing)" }))
+    expect(screen.getByRole("heading", { name: "How AI agents work" }))
       .toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Interactive AI agent system map" }))
       .toBeInTheDocument();
@@ -100,9 +100,9 @@ describe("AgentDemo architecture explorer", () => {
     const { container } = renderAgentDemo();
     const map = screen.getByRole("region", { name: "Interactive AI agent system map" });
 
-    expect(screen.getByText("Final flow stays live")).toHaveAttribute(
+    expect(screen.getByText("System overview — pauses at end")).toHaveAttribute(
       "title",
-      "The group tour runs once, then the full system flow continues until paused or restarted",
+      "The system tour runs once, then pauses so you can inspect or advance",
     );
     fireEvent.click(screen.getByRole("button", { name: "Play animation" }));
     act(() => vi.advanceTimersByTime(9_000));
@@ -232,7 +232,7 @@ describe("AgentDemo architecture explorer", () => {
 
     for (const label of [
       "Input & channels",
-      "Agent runtime",
+      "Orchestrator",
       "Context & memory",
       "Models",
       "Agents & workers",
@@ -262,6 +262,17 @@ describe("AgentDemo architecture explorer", () => {
     expect(getApplicationRoot()).toHaveAttribute("inert");
     expect(getApplicationRoot()).toHaveAttribute("aria-hidden", "true");
     expect(document.body.style.overflow).toBe("hidden");
+    const implSummary = within(dialog).getByText("Implementation details")
+      .closest("summary");
+    const implDetails = implSummary?.closest("details");
+    if (!(implSummary instanceof HTMLElement) || !(implDetails instanceof HTMLDetailsElement)) {
+      throw new Error("The implementation details disclosure is missing.");
+    }
+    expect(implDetails).not.toHaveAttribute("open");
+
+    fireEvent.click(implSummary);
+
+    expect(implDetails).toHaveAttribute("open");
     expect(within(dialog).getByRole("figure", {
       name: "Coordinator platform blueprint",
     })).toBeInTheDocument();
@@ -287,24 +298,20 @@ describe("AgentDemo architecture explorer", () => {
       .toBeInTheDocument();
     expect(within(openSourceRegion).getByText("Reviewed 17 Jul 2026"))
       .toBeInTheDocument();
-    expect(within(referenceStack).getByRole("link", {
+    const archSummary = within(openSourceRegion).getByText("Architecture track")
+      .closest("summary");
+    const archDetails = archSummary?.closest("details");
+    if (!(archSummary instanceof HTMLElement) || !(archDetails instanceof HTMLDetailsElement)) {
+      throw new Error("The collapsed architecture track section is missing.");
+    }
+    expect(archDetails).not.toHaveAttribute("open");
+
+    fireEvent.click(archSummary);
+
+    expect(archDetails).toHaveAttribute("open");
+    expect(within(archDetails).getByRole("link", {
       name: "Open official LangGraph documentation",
     })).toHaveAttribute("href", "https://docs.langchain.com/oss/python/langgraph/overview");
-    const pythonSummary = within(openSourceRegion).getByText("Python ecosystem")
-      .closest("summary");
-    const pythonDetails = pythonSummary?.closest("details");
-    if (!(pythonSummary instanceof HTMLElement) || !(pythonDetails instanceof HTMLDetailsElement)) {
-      throw new Error("The collapsed Python ecosystem section is missing.");
-    }
-    expect(pythonDetails).not.toHaveAttribute("open");
-
-    fireEvent.click(pythonSummary);
-
-    expect(pythonDetails).toHaveAttribute("open");
-    expect(within(openSourceRegion).getByText("CrewAI")).toBeInTheDocument();
-    expect(within(openSourceRegion).getByText("smolagents")).toBeInTheDocument();
-    expect(within(openSourceRegion).getAllByText("Featured above").length)
-      .toBeGreaterThan(0);
     expect(trigger).toHaveAttribute("aria-pressed", "true");
     expect(container.querySelector(".agent-stage")).toHaveAttribute("data-playback", "paused");
     expect(within(dialog).getByRole("button", { name: "Close component details" }))

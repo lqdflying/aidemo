@@ -159,17 +159,6 @@ export function AgentOpenSourceRecommendations({
     ...recommendation.companions.map(({ solutionId }) => solutionId),
     ...recommendation.alternatives.map(({ solutionId }) => solutionId),
   ]);
-  const pythonChoices = [
-    { choice: recommendation.pythonEcosystem.preferred, role: "Preferred" as const },
-    ...recommendation.pythonEcosystem.companions.map((choice) => ({
-      choice,
-      role: "Companion" as const,
-    })),
-    ...recommendation.pythonEcosystem.alternatives.map((choice) => ({
-      choice,
-      role: "Alternative" as const,
-    })),
-  ];
 
   return (
     <section aria-label="Build with open source" className="agent-open-source">
@@ -186,25 +175,30 @@ export function AgentOpenSourceRecommendations({
       </header>
 
       <figure
-        aria-label="Open-source reference stack"
+        aria-label="Python implementation stack"
         className="agent-open-source__stack"
-        data-has-companions={recommendation.companions.length > 0 || undefined}
+        data-has-companions={recommendation.pythonEcosystem.companions.length > 0 || undefined}
       >
-        <SolutionCard choice={recommendation.preferred} prominence="preferred" />
-        {recommendation.companions.length > 0 && (
+        <PythonSolutionCard
+          choice={recommendation.pythonEcosystem.preferred}
+          featuredAbove={mainSolutionIds.has(recommendation.pythonEcosystem.preferred.solutionId)}
+          role="Preferred"
+        />
+        {recommendation.pythonEcosystem.companions.length > 0 && (
           <>
             <div aria-hidden="true" className="agent-open-source__join">
               <i />
               <Plus />
             </div>
-            <section aria-label="Recommended companion projects" className="agent-open-source__companions">
+            <section aria-label="Python companion projects" className="agent-open-source__companions">
               <span>Pair with</span>
               <div>
-                {recommendation.companions.map((item) => (
-                  <SolutionCard
+                {recommendation.pythonEcosystem.companions.map((item) => (
+                  <PythonSolutionCard
                     choice={item}
+                    featuredAbove={mainSolutionIds.has(item.solutionId)}
                     key={item.solutionId}
-                    prominence="companion"
+                    role="Companion"
                   />
                 ))}
               </div>
@@ -213,18 +207,57 @@ export function AgentOpenSourceRecommendations({
         )}
         <figcaption>
           <GitCompareArrows aria-hidden="true" />
-          <span><strong>Selection rule</strong>{recommendation.decisionRule}</span>
+          <span><strong>Python selection rule</strong>{recommendation.pythonEcosystem.decisionRule}</span>
         </figcaption>
       </figure>
 
-      {recommendation.alternatives.length > 0 && (
+      {recommendation.pythonEcosystem.alternatives.length > 0 && (
         <details className="agent-open-source__alternatives">
           <summary>
             <GitCompareArrows aria-hidden="true" />
-            Compare {recommendation.alternatives.length === 1 ? "an alternative" : "alternatives"}
-            <span>{recommendation.alternatives.length}</span>
+            Compare Python {recommendation.pythonEcosystem.alternatives.length === 1 ? "alternative" : "alternatives"}
+            <span>{recommendation.pythonEcosystem.alternatives.length}</span>
           </summary>
           <div>
+            {recommendation.pythonEcosystem.alternatives.map((item) => (
+              <PythonSolutionCard
+                choice={item}
+                featuredAbove={mainSolutionIds.has(item.solutionId)}
+                key={item.solutionId}
+                role="Alternative"
+              />
+            ))}
+          </div>
+        </details>
+      )}
+
+      <details className="agent-open-source__architecture">
+        <summary>
+          <FileCode2 aria-hidden="true" />
+          <span>
+            <strong>Architecture track</strong>
+            <small>Platform-level infrastructure and protocol choices</small>
+          </span>
+          <b aria-label={`${1 + recommendation.companions.length + recommendation.alternatives.length} architecture projects`}>
+            {1 + recommendation.companions.length + recommendation.alternatives.length}
+          </b>
+        </summary>
+        <div className="agent-open-source__architecture-body">
+          {recommendation.architectureExceptionReason && (
+            <p className="agent-open-source__exception">
+              <GitCompareArrows aria-hidden="true" />
+              <span><strong>Non-Python exception</strong>{recommendation.architectureExceptionReason}</span>
+            </p>
+          )}
+          <div className="agent-open-source__architecture-grid">
+            <SolutionCard choice={recommendation.preferred} prominence="preferred" />
+            {recommendation.companions.map((item) => (
+              <SolutionCard
+                choice={item}
+                key={item.solutionId}
+                prominence="companion"
+              />
+            ))}
             {recommendation.alternatives.map((item) => (
               <SolutionCard
                 choice={item}
@@ -233,37 +266,9 @@ export function AgentOpenSourceRecommendations({
               />
             ))}
           </div>
-        </details>
-      )}
-
-      <details className="agent-open-source__python">
-        <summary>
-          <FileCode2 aria-hidden="true" />
-          <span>
-            <strong>Python ecosystem</strong>
-            <small>Mature Python implementation path for this boundary</small>
-          </span>
-          <b aria-label={`${pythonChoices.length} Python ecosystem projects`}>
-            {pythonChoices.length}
-          </b>
-        </summary>
-        <div className="agent-open-source__python-body">
-          <div className="agent-open-source__python-grid">
-            {pythonChoices.map(({ choice, role }) => (
-              <PythonSolutionCard
-                choice={choice}
-                featuredAbove={mainSolutionIds.has(choice.solutionId)}
-                key={`${role}-${choice.solutionId}`}
-                role={role}
-              />
-            ))}
-          </div>
           <p className="agent-open-source__python-rule">
             <GitCompareArrows aria-hidden="true" />
-            <span>
-              <strong>Python selection rule</strong>
-              {recommendation.pythonEcosystem.decisionRule}
-            </span>
+            <span><strong>Architecture selection rule</strong>{recommendation.decisionRule}</span>
           </p>
         </div>
       </details>

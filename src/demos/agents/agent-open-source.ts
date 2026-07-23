@@ -744,6 +744,7 @@ export interface AgentSolutionTrack {
 export interface AgentOpenSourceRecommendation extends AgentSolutionTrack {
   readonly reviewedOn: typeof AGENT_OPEN_SOURCE_REVIEW_DATE;
   readonly pythonEcosystem: AgentSolutionTrack;
+  readonly architectureExceptionReason?: string;
 }
 
 function choice(
@@ -1371,50 +1372,52 @@ const agentComponentPythonEcosystem = {
 function recommendation(
   architecture: AgentSolutionTrack,
   pythonEcosystem: AgentSolutionTrack,
+  architectureExceptionReason?: string,
 ): AgentOpenSourceRecommendation {
   return {
     ...architecture,
     reviewedOn: AGENT_OPEN_SOURCE_REVIEW_DATE,
     pythonEcosystem,
+    ...(architectureExceptionReason ? { architectureExceptionReason } : {}),
   };
 }
 
 export const agentGroupOpenSourceRecommendations = {
-  entry: recommendation(agentGroupArchitectureRecommendations.entry, agentGroupPythonEcosystem.entry),
+  entry: recommendation(agentGroupArchitectureRecommendations.entry, agentGroupPythonEcosystem.entry, "Edge gateway routing, rate limiting, and TLS termination require infrastructure-level proxy performance that no Python implementation can match at scale."),
   runtime: recommendation(agentGroupArchitectureRecommendations.runtime, agentGroupPythonEcosystem.runtime),
   context: recommendation(agentGroupArchitectureRecommendations.context, agentGroupPythonEcosystem.context),
   models: recommendation(agentGroupArchitectureRecommendations.models, agentGroupPythonEcosystem.models),
   agents: recommendation(agentGroupArchitectureRecommendations.agents, agentGroupPythonEcosystem.agents),
-  tools: recommendation(agentGroupArchitectureRecommendations.tools, agentGroupPythonEcosystem.tools),
-  governance: recommendation(agentGroupArchitectureRecommendations.governance, agentGroupPythonEcosystem.governance),
-  outcome: recommendation(agentGroupArchitectureRecommendations.outcome, agentGroupPythonEcosystem.outcome),
+  tools: recommendation(agentGroupArchitectureRecommendations.tools, agentGroupPythonEcosystem.tools, "MCP is a language-neutral protocol specification; no single-language implementation owns the standard."),
+  governance: recommendation(agentGroupArchitectureRecommendations.governance, agentGroupPythonEcosystem.governance, "Deterministic policy evaluation requires sub-millisecond latency that Rego's Go runtime delivers; Python bindings exist but do not own the engine."),
+  outcome: recommendation(agentGroupArchitectureRecommendations.outcome, agentGroupPythonEcosystem.outcome, "OpenTelemetry is a cross-language observability standard; its Python SDK is first-class but the specification is intentionally language-neutral."),
 } satisfies Readonly<Record<AgentGroupId, AgentOpenSourceRecommendation>>;
 
 export const agentComponentOpenSourceRecommendations = {
-  "user-application": recommendation(agentComponentArchitectureRecommendations["user-application"], agentComponentPythonEcosystem["user-application"]),
-  "event-message": recommendation(agentComponentArchitectureRecommendations["event-message"], agentComponentPythonEcosystem["event-message"]),
-  "input-gateway": recommendation(agentComponentArchitectureRecommendations["input-gateway"], agentComponentPythonEcosystem["input-gateway"]),
+  "user-application": recommendation(agentComponentArchitectureRecommendations["user-application"], agentComponentPythonEcosystem["user-application"], "The application boundary is a TypeScript frontend; AI SDK provides typed streaming and tool integration that Python cannot serve to the browser."),
+  "event-message": recommendation(agentComponentArchitectureRecommendations["event-message"], agentComponentPythonEcosystem["event-message"], "Durable messaging with replay, acknowledgement, and dead-letter requires infrastructure-level broker performance beyond Python's runtime capabilities."),
+  "input-gateway": recommendation(agentComponentArchitectureRecommendations["input-gateway"], agentComponentPythonEcosystem["input-gateway"], "Edge proxy routing, TLS termination, and rate limiting require infrastructure-level performance that no Python implementation matches at scale."),
   coordinator: recommendation(agentComponentArchitectureRecommendations.coordinator, agentComponentPythonEcosystem.coordinator),
-  "task-scheduler": recommendation(agentComponentArchitectureRecommendations["task-scheduler"], agentComponentPythonEcosystem["task-scheduler"]),
+  "task-scheduler": recommendation(agentComponentArchitectureRecommendations["task-scheduler"], agentComponentPythonEcosystem["task-scheduler"], "Durable cross-service workflow scheduling requires Temporal's Go-based server for persistence, timers, and exactly-once guarantees beyond Python's process boundary."),
   "working-context": recommendation(agentComponentArchitectureRecommendations["working-context"], agentComponentPythonEcosystem["working-context"]),
-  "long-term-memory": recommendation(agentComponentArchitectureRecommendations["long-term-memory"], agentComponentPythonEcosystem["long-term-memory"]),
+  "long-term-memory": recommendation(agentComponentArchitectureRecommendations["long-term-memory"], agentComponentPythonEcosystem["long-term-memory"], "PostgreSQL with pgvector provides transactional durability and ACID guarantees at the storage layer that no Python-native store can replace."),
   "skills-instructions": recommendation(agentComponentArchitectureRecommendations["skills-instructions"], agentComponentPythonEcosystem["skills-instructions"]),
   "context-manager": recommendation(agentComponentArchitectureRecommendations["context-manager"], agentComponentPythonEcosystem["context-manager"]),
   "general-model": recommendation(agentComponentArchitectureRecommendations["general-model"], agentComponentPythonEcosystem["general-model"]),
   "private-model": recommendation(agentComponentArchitectureRecommendations["private-model"], agentComponentPythonEcosystem["private-model"]),
   "worker-a": recommendation(agentComponentArchitectureRecommendations["worker-a"], agentComponentPythonEcosystem["worker-a"]),
   "worker-b": recommendation(agentComponentArchitectureRecommendations["worker-b"], agentComponentPythonEcosystem["worker-b"]),
-  "worker-c": recommendation(agentComponentArchitectureRecommendations["worker-c"], agentComponentPythonEcosystem["worker-c"]),
+  "worker-c": recommendation(agentComponentArchitectureRecommendations["worker-c"], agentComponentPythonEcosystem["worker-c"], "Write-side execution requires durable workflow guarantees (retries, compensation, reconciliation) that Temporal's server provides beyond Python's process boundary."),
   "function-tool": recommendation(agentComponentArchitectureRecommendations["function-tool"], agentComponentPythonEcosystem["function-tool"]),
   "retrieval-tool": recommendation(agentComponentArchitectureRecommendations["retrieval-tool"], agentComponentPythonEcosystem["retrieval-tool"]),
-  "data-source": recommendation(agentComponentArchitectureRecommendations["data-source"], agentComponentPythonEcosystem["data-source"]),
-  "action-tool": recommendation(agentComponentArchitectureRecommendations["action-tool"], agentComponentPythonEcosystem["action-tool"]),
-  "policy-guard": recommendation(agentComponentArchitectureRecommendations["policy-guard"], agentComponentPythonEcosystem["policy-guard"]),
+  "data-source": recommendation(agentComponentArchitectureRecommendations["data-source"], agentComponentPythonEcosystem["data-source"], "Federated query execution across heterogeneous data systems requires Trino's distributed Java engine for performance and connector breadth."),
+  "action-tool": recommendation(agentComponentArchitectureRecommendations["action-tool"], agentComponentPythonEcosystem["action-tool"], "Durable write execution requires Temporal's server-level guarantees for idempotency, compensation, and state reconciliation."),
+  "policy-guard": recommendation(agentComponentArchitectureRecommendations["policy-guard"], agentComponentPythonEcosystem["policy-guard"], "Sub-millisecond deterministic policy evaluation requires OPA's Go-based Rego engine; Python bindings exist but do not own the runtime."),
   "output-evaluator": recommendation(agentComponentArchitectureRecommendations["output-evaluator"], agentComponentPythonEcosystem["output-evaluator"]),
   "human-approval": recommendation(agentComponentArchitectureRecommendations["human-approval"], agentComponentPythonEcosystem["human-approval"]),
-  "response-publisher": recommendation(agentComponentArchitectureRecommendations["response-publisher"], agentComponentPythonEcosystem["response-publisher"]),
-  "memory-writer": recommendation(agentComponentArchitectureRecommendations["memory-writer"], agentComponentPythonEcosystem["memory-writer"]),
-  "trace-telemetry": recommendation(agentComponentArchitectureRecommendations["trace-telemetry"], agentComponentPythonEcosystem["trace-telemetry"]),
+  "response-publisher": recommendation(agentComponentArchitectureRecommendations["response-publisher"], agentComponentPythonEcosystem["response-publisher"], "Durable async delivery with acknowledgement, replay, and dead-letter requires infrastructure-level broker performance beyond Python's runtime capabilities."),
+  "memory-writer": recommendation(agentComponentArchitectureRecommendations["memory-writer"], agentComponentPythonEcosystem["memory-writer"], "PostgreSQL provides transactional write guarantees and ACID durability for governed memory records that no Python-native store can replace."),
+  "trace-telemetry": recommendation(agentComponentArchitectureRecommendations["trace-telemetry"], agentComponentPythonEcosystem["trace-telemetry"], "OpenTelemetry is a cross-language observability standard; its Python SDK is first-class but the specification is intentionally language-neutral."),
 } satisfies Readonly<Record<AgentComponentId, AgentOpenSourceRecommendation>>;
 
 export function getAgentGroupOpenSourceRecommendation(

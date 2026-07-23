@@ -13,7 +13,7 @@ alwaysApply: true
 ## Cosign Signing (key-based)
 Harbor enforces Cosign content trust — every published image MUST be signed before it can be pulled. Signing is **key-based** (not keyless).
 
-- **cosign binary**: `~/.local/bin/cosign`. Ensure it's on PATH: `export PATH="$HOME/.local/bin:$PATH"`.
+- **cosign binary**: `/home/opc/infocenter/scripts/.cache/cosign`. Set `COSIGN=/home/opc/infocenter/scripts/.cache/cosign` at the start of every release session and invoke via `$COSIGN`. Do NOT assume `~/.local/bin/cosign` exists.
 - **Key material** lives OUTSIDE the repo, at `~/.config/aidemo/`:
   - `cosign.key` — private key (chmod 600). Never commit, never bake into an image.
   - `cosign.pub` — public key (safe to share; configure in Harbor / admission controllers for verification).
@@ -82,7 +82,7 @@ Run `VERSION=0.1.0 ./scripts/release.sh`, or run the commands directly. The scri
 
 ```bash
 cd /home/opc/aidemo
-export PATH="$HOME/.local/bin:$PATH"   # cosign
+COSIGN=/home/opc/infocenter/scripts/.cache/cosign
 VERSION=0.1.0
 MINOR=${VERSION%.*}                    # 0.1
 MAJOR=${VERSION%%.*}                   # 0
@@ -106,21 +106,38 @@ docker build --pull \
   -t $IMAGE:latest \
   .
 
-# 4. Push all four tags to Harbor (uses ~/.docker/config.json auth).
+# 4. MANDATORY local digest gate — all four tags must share one image ID.
+#    If any tag resolves to a different ID, a stale local tag is present.
+#    Abort and re-tag before pushing.
+BUILD_ID=$(docker inspect --format='{{.Id}}' $IMAGE:$VERSION)
+for TAG in $MINOR $MAJOR latest; do
+  TAG_ID=$(docker inspect --format='{{.Id}}' $IMAGE:$TAG)
+  if [ "$TAG_ID" != "$BUILD_ID" ]; then
+    echo "FATAL: $IMAGE:$TAG resolves to $TAG_ID, expected $BUILD_ID" >&2
+    echo "Fix: docker tag $IMAGE:$VERSION $IMAGE:$TAG" >&2
+    exit 1
+  fi
+done
+echo "All four local tags share image ID $BUILD_ID"
+
+# 5. Push all four tags to Harbor (uses ~/.docker/config.json auth).
 docker push $IMAGE:$VERSION
 docker push $IMAGE:$MINOR
 docker push $IMAGE:$MAJOR
 docker push $IMAGE:latest
+
+# 6. Verify all four tags landed on the same remote digest.
 DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' $IMAGE:$VERSION | sed 's/.*@//')
+echo "Remote digest: $DIGEST"
 
-# 5. Sign with cosign (key-based), by digest.
+# 7. Sign with cosign (key-based), by digest.
 export COSIGN_PASSWORD="$(cat ~/.config/aidemo/cosign.password)"
-cosign sign --key ~/.config/aidemo/cosign.key --yes $IMAGE@$DIGEST
+$COSIGN sign --key ~/.config/aidemo/cosign.key --yes $IMAGE@$DIGEST
 
-# 6. Verify the signature.
-cosign verify --key ~/.config/aidemo/cosign.pub $IMAGE@$DIGEST
+# 8. Verify the signature (all four tags covered by one digest signature).
+$COSIGN verify --key ~/.config/aidemo/cosign.pub $IMAGE@$DIGEST
 
-# 7. Create + push the matching GitHub tag (requires the repo to be a git repo with committed code).
+# 9. Create + push the matching GitHub tag (requires the repo to be a git repo with committed code).
 git tag v$VERSION
 git push origin v$VERSION
 ```
@@ -136,3 +153,23 @@ git push origin v$VERSION
 - **Harbor content trust is a pull-side policy**: it blocks *pulls* of unsigned images, not pushes. The required sequence is still push → `cosign sign` (uploads the signature). A freshly pushed image is unsigned until `cosign sign` completes — pulls will fail in that window. Because all four tags share one manifest, there is a single signing step; all four tags become pullable once that one signature lands.
 - **Sign by digest (default)**: the procedure signs `$IMAGE@$DIGEST` rather than `$IMAGE:$TAG`. This is the integrity-preserving form cosign recommends. Since all four tags point at the same manifest, one digest signature covers all four tags.
 - **Secrets**: Harbor credentials in `~/.docker/config.json`; cosign private key + password in `~/.config/aidemo/`. Neither is ever committed to the repo. Never print the `.auth` field of `~/.docker/config.json` (it contains base64-encoded credentials).
+
+## Hardening — Preventing Stale Tag and Signing Failures
+
+These rules exist because past releases shipped with `latest` pointing to a different digest (stale local tag) or unsigned images (wrong cosign path).
+
+### Stale local tag prevention
+- **Never push a tag without first verifying its local image ID matches the version tag.** The mandatory digest gate (step 4 in the release procedure) catches this. If it fails, run `docker tag $IMAGE:$VERSION $IMAGE:<stale-tag>` before pushing.
+- **Root cause**: Docker does not overwrite a local tag when `docker build -t` is used IF the tag already points to an older image on a different layer chain. Always verify with `docker inspect --format='{{.Id}}'` after build.
+- **If a stale tag reaches Harbor**: delete the wrong-digest tag via Harbor API (`DELETE /api/v2.0/projects/aidemo/repositories/aidemo/artifacts/<wrong-sha>/tags/<tag>`), then delete the orphaned artifact, re-push the correct image, and verify the signature covers it.
+
+### Cosign availability
+- The cosign binary lives at `/home/opc/infocenter/scripts/.cache/cosign` (NOT `~/.local/bin/cosign`). Always set `COSIGN=/home/opc/infocenter/scripts/.cache/cosign` and invoke via `$COSIGN`. Verify it exists before starting a release: `$COSIGN version`.
+- The key material lives at `~/.config/aidemo/cosign.key`, `cosign.pub`, and `cosign.password`. Verify all three exist before starting: `ls ~/.config/aidemo/cosign.*`.
+
+### Post-push verification checklist
+After every push, verify ALL of the following before declaring the release complete:
+1. All four tags appear in Harbor pointing to the **same** digest.
+2. The signed column shows ✓ for that digest.
+3. `$COSIGN verify --key ~/.config/aidemo/cosign.pub $IMAGE:latest` exits 0.
+4. Vulnerability scan shows "No vulnerabilities" for the full-semver tag.
